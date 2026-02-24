@@ -2,6 +2,9 @@
 
 import { isTracking } from './state.js';
 
+// Save/Load中のスリープ防止用Wake Lock
+let _busyWakeLock = null;
+
 /**
  * UIのビジー状態を設定（Save/Load中など）
  * @param {boolean} isBusy
@@ -23,8 +26,23 @@ export function setUiBusy(isBusy) {
         if (settingsBtn) settingsBtn.disabled = true;
         if (dataSaveBtn) dataSaveBtn.disabled = true;
         if (dataReloadBtn) dataReloadBtn.disabled = true;
+        // Save/Load中のスリープを防止
+        if ('wakeLock' in navigator) {
+            navigator.wakeLock.request('screen').then(lock => {
+                _busyWakeLock = lock;
+            }).catch(err => {
+                console.warn('Wake Lock取得エラー (busy):', err);
+            });
+        }
     } else {
         updateUiForTrackingState();
+        // Save/Load完了後にWake Lockを解放
+        if (_busyWakeLock !== null) {
+            _busyWakeLock.release().catch(err => {
+                console.warn('Wake Lock解放エラー (busy):', err);
+            });
+            _busyWakeLock = null;
+        }
     }
 }
 
