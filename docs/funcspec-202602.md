@@ -1,7 +1,7 @@
 # RouteLogger 機能仕様書
 
 **バージョン:** 202602
-**最終更新日:** 2026年2月2日
+**最終更新日:** 2026年2月28日
 
 ---
 
@@ -22,9 +22,9 @@ RouteLogger - GPS位置記録
 | 項目 | 技術 |
 |------|------|
 | 地図 | Leaflet.js 1.9.4 + 国土地理院タイル |
-| フロントエンド | Vanilla JavaScript (ES6) |
+| フロントエンド | Vanilla JavaScript (ES6モジュール) |
 | スタイル | カスタムCSS（レスポンシブ対応） |
-| ローカルストレージ | IndexedDB |
+| ローカルストレージ | IndexedDB (v4) |
 | クラウドストレージ | Firebase (Firestore + Storage) |
 | 認証 | Firebase Anonymous Authentication |
 | PWA | Service Worker + Web App Manifest |
@@ -34,21 +34,23 @@ RouteLogger - GPS位置記録
 ## 2. 画面構成
 
 ### 2.1 メイン画面
+- **時計表示:** 地図上部に現在時刻（HH:mm）を表示（設定でON/OFF可能）
 - **地図表示領域:** 国土地理院地図を全画面表示
 - **ステータス表示:** 画面上部に現在のステータスと座標情報を表示
-- **コントロールパネル:** 画面下部に操作ボタンを配置
-- **データ管理パネル:** Dataボタンで切り替え表示
+- **コントロールパネル:** 画面下部にStart/Stop/Photo/Data/Settingsボタンを配置
+- **データ管理パネル:** Dataボタンで表示切り替え（List/Size/Save/Reload/Clearボタン）
 
 ### 2.2 ダイアログ
 | ダイアログ名 | 用途 |
 |-------------|------|
 | 写真一覧ダイアログ | 保存済み写真のグリッド表示 |
-| 写真拡大ダイアログ | 選択写真の拡大表示と詳細情報 |
-| カメラダイアログ | 写真撮影UI（撮影＋方向選択） |
+| 写真拡大ダイアログ | 選択写真の拡大表示と詳細情報・ナビゲーション |
+| カメラダイアログ | 写真撮影UI（方向ダイアル・facing選択） |
 | 記録統計ダイアログ | データサイズ・記録統計の表示 |
 | ドキュメント選択ダイアログ | Firebase保存データの読み込み選択 |
-| ドキュメント名入力ダイアログ | Firebase保存時の名前入力 |
+| ドキュメント名入力ダイアログ | 保存時のファイル/ドキュメント名入力 |
 | データ初期化確認ダイアログ | Start時の既存データ確認 |
+| 設定ダイアログ | アプリ設定（時計・Firebase・方向ボタン） |
 
 ---
 
@@ -90,7 +92,10 @@ RouteLogger - GPS位置記録
     lat: number,      // 緯度（小数点以下5桁）
     lng: number,      // 経度（小数点以下5桁）
     timestamp: string, // ISO 8601形式
-    accuracy: number   // 精度（小数点以下1桁、メートル）
+    accuracy: number,  // 精度（小数点以下1桁、メートル）
+    altitude: number | null, // 高度（利用可能な場合）
+    heading: number,   // 進行方向
+    speed: number      // 速度
 }
 ```
 
@@ -103,39 +108,53 @@ RouteLogger - GPS位置記録
   2. 背面カメラでプレビュー表示（720x1280pxを希望）
   3. シャッターボタンで撮影
   4. プレビュー確認画面を表示
-      - "Retake"ボタン: 再撮影（カメラ画面に戻る、現在の編集状態をリセット）
-      - "Text"ボタン: テキストメモを入力（プロンプト表示）。保存済み写真の場合は即座に更新。
-      - 方向ボタン（左・上・右）: 方向を選択して保存（または更新）
+      - **Retake**ボタン: 再撮影（カメラ画面に戻る、現在の編集状態をリセット）
+      - **Text**ボタン: テキストメモを入力（保存済み写真の場合は即座に更新）
+      - **方向ダイアル**: ドラッグまたは±ボタンで撮影角度を10°単位で設定（-180°〜+180°）
+      - **Forward/Backward**: 進行方向前方向 / 後方向を選択（設定でボタン非表示可能）
       - 閉じるボタン: カメラモードを終了
-  5. 方向を選択すると:
-     - 選択した方向の矢印アイコンを画像下部にスタンプ
+  5. Forward/Backwardボタンをタップすると:
+     - 現在の角度・facing設定で保存（または更新）
+     - 矢印スタンプを画像下部に描画（角度に応じて回転）
      - 現在のGPS位置情報を紐付け
-     - **上書き保存:** 既に保存済みの写真（同セッション内）に対して方向ボタンを押した場合は、新しい写真を作成せず、既存の写真データを更新（方向・スタンプも更新）
+     - **上書き保存:** 同セッション内で既に保存済みの写真を方向変更した場合は既存データを更新
      - IndexedDBに保存/更新
      - 地図上に写真マーカー（オレンジ色の丸）を追加/更新
      - 保存後もプレビュー画面を維持し、方向の変更やテキストの修正が可能
 
-#### 3.2.2 写真データ形式
+#### 3.2.2 方向ダイアル仕様
+- **角度範囲:** -180°〜+180°（10°単位スナップ）
+- **操作方法:**
+  - ドラッグ（タッチ/マウス）: ダイアル中心を基準に指の角度を検出
+  - ±ボタン: 10°単位で増減
+- **facing設定:** Forward（前向き）/ Backward（後ろ向き）をトグルで選択
+  - 設定「Show Facing Buttons」がOFFの場合はForward/Backwardボタンを非表示
+
+#### 3.2.3 写真データ形式
 ```javascript
 {
-    data: string,      // Base64形式の画像データ（JPEG、品質0.6）
-    timestamp: string, // ISO 8601形式
-    direction: string, // "left" | "up" | "right"
+    data: string,          // Base64形式の画像データ（JPEG、品質0.6、矢印スタンプ済み）
+    timestamp: string,     // ISO 8601形式
+    direction: number,     // 角度（度数、-180〜+180、0=正面、正=右、負=左）
+    facing: string | null, // "forward" | "backward" | null
     location: {
-        lat: number,   // 緯度（小数点以下5桁）
-        lng: number    // 経度（小数点以下5桁）
+        lat: number,       // 緯度（小数点以下5桁）
+        lng: number,       // 経度（小数点以下5桁）
+        accuracy: number   // 精度
     },
-    text: string       // [任意] 写真へのメモテキスト
+    text: string | null    // 写真へのメモテキスト
 }
 ```
+
+> **後方互換:** 旧バージョンで保存した `direction: "left" | "up" | "right"` 形式も読み込み可能（表示時に変換）
 
 ### 3.3 データ管理機能
 
 #### 3.3.1 写真一覧（Listボタン）
 - 保存済み写真をグリッド表示
 - サムネイルクリックで拡大表示
-- タイトル「Photo Gallery」と写真数の間に改行を入れて表示
-- 拡大表示時に撮影日時、位置情報、方向、およびテキストメモ（ある場合）を表示
+- 拡大表示時に撮影日時、位置情報、方向角度、facing、テキストメモを表示
+- 前後ナビゲーションボタンで写真切り替え
 
 #### 3.3.2 データサイズ表示（Sizeボタン）
 - 表示項目:
@@ -144,27 +163,81 @@ RouteLogger - GPS位置記録
   - 写真枚数
   - 写真データサイズ（KB/MB）
   - 写真解像度
-- GPS追跡中はリアルタイム更新
 
-#### 3.3.3 Firebase保存（Saveボタン）
+#### 3.3.3 データ保存（Saveボタン）
+
+**Firebase ONの場合（クラウド保存）:**
 - **前提条件:** GPS追跡を開始した後のみ有効
 - **動作:**
-  1. ドキュメント名入力ダイアログを表示（デフォルト: 追跡開始日時）
-  2. 同名ドキュメントが存在する場合は自動で連番付与（例: `name_2`, `name_3`）
-  3. 写真をFirebase Storageにアップロード（認証ありの場合のみ）
+  1. ドキュメント名入力ダイアログ（デフォルト: `RLog-YYYYMMDD` JST日付）
+  2. 同名ドキュメントが存在する場合は自動で連番付与（例: `name_2`）
+  3. 写真をFirebase Storageにアップロード
   4. プロジェクトデータをFirestoreに保存
+  5. Save/Load中はWake Lockを取得（画面スリープを防止）
 
-#### 3.3.4 Firebaseからの読み込み（Reloadボタン）
+**Firebase OFFの場合（KMZファイル保存）:**
+- **前提条件:** なし（GPS追跡なしでも保存可能）
 - **動作:**
-  1. Firestoreからプロジェクト一覧を取得（作成日時の降順）
-  2. ドキュメント選択ダイアログを表示
-  3. 選択したドキュメントのデータをIndexedDBに復元
-  4. 地図上にトラックと写真マーカーを表示
-- **表示項目:** ドキュメント名、作成日時、ユーザーID（一部）、トラック件数、写真枚数
+  1. ファイル名入力ダイアログ（デフォルト: `RLog-YYYYMMDD`）
+  2. KMZファイルを生成してダウンロード
+     - `doc.kml`: GPSトラック（LineString）と写真位置（Point）のKML
+     - `images/photo_{id}.jpg`: 写真ファイル（Base64→Binary変換）
+     - MIMEタイプ: `application/vnd.google-earth.kmz`
 
-### 3.4 地図表示機能
+#### 3.3.4 データ読み込み（Reloadボタン）
 
-#### 3.4.1 地図設定
+**Firebase ONの場合（クラウドから読み込み）:**
+- Firestoreからプロジェクト一覧を取得（作成日時の降順）
+- ドキュメント選択ダイアログを表示
+- 選択したドキュメントのデータをIndexedDBに復元
+- 地図上にトラックと写真マーカーを表示
+
+**Firebase OFFの場合（ファイルから読み込み）:**
+- ファイル選択ダイアログを表示（対応形式: `.kmz`, `.kml`, `.geojson`, `.json`, `.zip`）
+- RouteLogger製KMZの場合: 現在データをクリアしてトラック・写真を復元
+- 外部KMZ/GeoJSONの場合: 外部レイヤーとして地図上に表示（IndexedDBに保存）
+- Save/Load中はWake Lockを取得（画面スリープを防止）
+
+#### 3.3.5 データクリア（Clearボタン）
+- 確認ダイアログを表示
+- 「OK」の場合: 地図上のルート・マーカーを消去し、IndexedDBを初期化
+
+### 3.4 外部データ表示機能
+
+#### 3.4.1 外部KMZ/GeoJSONインポート
+- RouteLogger製以外のKMZ/KML/GeoJSONファイルを外部レイヤーとして表示
+- Firestoreの `externals` コレクション（IndexedDB）に保存
+- 画像ファイルは `external_photos` ストアに保存
+- アプリ起動時に自動復元
+
+#### 3.4.2 KMZインポート判定
+- KML内に `<atom:name>RouteLogger</atom:name>` タグがある場合: RouteLogger製として処理
+- それ以外: 外部データとして処理（`toGeoJSON`ライブラリで変換）
+
+### 3.5 設定機能
+
+#### 3.5.1 設定項目
+| 設定名 | デフォルト | 内容 |
+|--------|----------|------|
+| Show Clock | ON | 地図上に現在時刻を表示 |
+| Use Firebase | OFF | Save/LoadをFirebase経由にする |
+| Show Facing Buttons | ON | 写真撮影時のForward/Backwardボタンを表示 |
+
+#### 3.5.2 設定の永続化
+- `localStorage` に保存
+  - `routeLogger_showClock`
+  - `routeLogger_useFirebase`
+  - `routeLogger_showFacingButtons`
+
+### 3.6 時計表示機能
+- 地図上に現在時刻を表示（HH:mm形式）
+- 1秒ごとに更新
+- 設定「Show Clock」でON/OFF切り替え可能
+- ClearボタンのY軸上方に配置（safe-area対応）
+
+### 3.7 地図表示機能
+
+#### 3.7.1 地図設定
 | 項目 | 値 |
 |------|-----|
 | タイルソース | 国土地理院標準地図 |
@@ -173,33 +246,36 @@ RouteLogger - GPS位置記録
 | 初期位置 | 最後の記録位置 or デフォルト（箕面大滝: 34.853667, 135.472041） |
 | 初期ズーム | 13（デフォルト）/ 15（位置取得時） |
 
-#### 3.4.2 マーカー表示
+#### 3.7.2 マーカー表示
 | マーカー種別 | 外観 | 用途 |
 |-------------|------|------|
 | 現在位置マーカー | 緑の三角形（矢印型） | 現在地と進行方向を表示 |
 | 写真マーカー | オレンジ色の丸（12px） | 写真撮影位置を表示 |
 
-#### 3.4.3 軌跡表示
+#### 3.7.3 軌跡表示
 - **色:** #4CAF50（緑）
 - **線幅:** 4px
 - **透明度:** 0.7
 
-### 3.5 デバイス方向取得機能
+### 3.8 デバイス方向取得機能
 
-#### 3.5.1 DeviceOrientation API
+#### 3.8.1 DeviceOrientation API
 - iOS Safari: `webkitCompassHeading`を使用
 - Android Chrome等: `alpha`値から方角を計算（`360 - alpha`）
 - 現在位置マーカーの向きをリアルタイム更新
 
-#### 3.5.2 GPSヘディング
+#### 3.8.2 GPSヘディング
 - `position.coords.heading`が利用可能な場合はそちらを優先
 
-### 3.6 画面スリープ防止機能
+### 3.9 画面スリープ防止機能（Wake Lock）
 
-#### 3.6.1 Wake Lock API
-- GPS追跡開始時に画面スリープを防止
-- 追跡停止時に解放
-- ページが再表示された時に自動再取得
+#### 3.9.1 Wake Lock APIの使用場面
+| 場面 | Wake Lock | 解放タイミング |
+|------|----------|-------------|
+| GPS追跡中 | `state.wakeLock` | Stop時・ページ非表示時 |
+| Save/Load中 | `_busyWakeLock`（ui-common内） | 操作完了時 |
+
+- ページが再表示された時に追跡中のWake Lockを自動再取得
 - 非対応ブラウザでは警告をコンソール出力
 
 ---
@@ -212,7 +288,7 @@ RouteLogger - GPS位置記録
 | 項目 | 値 |
 |------|-----|
 | データベース名 | RouteLoggerDB |
-| バージョン | 3 |
+| バージョン | 4 |
 
 #### 4.1.2 オブジェクトストア
 | ストア名 | キー | インデックス | 用途 |
@@ -220,6 +296,8 @@ RouteLogger - GPS位置記録
 | tracks | id (autoIncrement) | timestamp | トラッキングデータ |
 | photos | id (autoIncrement) | timestamp | 写真データ |
 | settings | key | - | 設定（最終位置など） |
+| externals | id (autoIncrement) | - | 外部GeoJSONデータ |
+| external_photos | id (autoIncrement) | - | 外部インポート写真 |
 
 #### 4.1.3 tracksデータ構造
 ```javascript
@@ -230,7 +308,10 @@ RouteLogger - GPS位置記録
         lat: number,
         lng: number,
         timestamp: string,
-        accuracy: number
+        accuracy: number,
+        altitude: number | null,
+        heading: number,
+        speed: number
     }],
     totalPoints: number // 記録点数
 }
@@ -239,15 +320,17 @@ RouteLogger - GPS位置記録
 #### 4.1.4 photosデータ構造
 ```javascript
 {
-    id: number,         // 自動採番
-    data: string,       // Base64画像データ
-    timestamp: string,  // 撮影日時（ISO 8601）
-    direction: string,  // 方向（"left" | "up" | "right"）
+    id: number,            // 自動採番
+    data: string,          // Base64画像データ（矢印スタンプ済み）
+    timestamp: string,     // 撮影日時（ISO 8601）
+    direction: number,     // 角度（度数、-180〜+180）
+    facing: string | null, // "forward" | "backward" | null
     location: {
         lat: number,
-        lng: number
+        lng: number,
+        accuracy: number
     },
-    text: string        // [任意] 写真へのメモテキスト
+    text: string | null    // 写真へのメモテキスト
 }
 ```
 
@@ -255,22 +338,21 @@ RouteLogger - GPS位置記録
 
 #### 4.2.1 Firestore構造
 ```
-projects/
-  └── {projectName}/        // ドキュメント名（日時または任意名）
-        ├── userId: string
+tracks/
+  └── {docName}/            // ドキュメント名（RLog-YYYYMMDD等）
+        ├── userId: string   // Firebase匿名認証UID
         ├── startTime: string
         ├── createdAt: timestamp
-        ├── lastPosition: { lat, lng, zoom, timestamp }
-        ├── tracks: []      // トラック配列
-        ├── photos: []      // 写真メタデータ配列
+        ├── tracks: []       // トラック配列
+        ├── photos: []       // 写真メタデータ配列（URLのみ、バイナリなし）
         ├── tracksCount: number
         └── photosCount: number
 ```
 
 #### 4.2.2 Firebase Storage構造
 ```
-projects/
-  └── {projectName}/
+tracks/
+  └── {docName}/
         └── photos/
               └── {timestamp}.jpg   // 写真ファイル
 ```
@@ -278,12 +360,13 @@ projects/
 #### 4.2.3 写真メタデータ（Firestore内）
 ```javascript
 {
-    url: string,          // ダウンロードURL
-    storagePath: string,  // Storageパス
+    url: string,           // Firebase Storage ダウンロードURL
+    storagePath: string,   // Storageパス（tracks/{name}/photos/{ts}.jpg）
     timestamp: string,
-    direction: string,
-    location: { lat, lng },
-    text: string          // [任意] 写真へのメモテキスト
+    direction: number,     // 角度（度数）
+    facing: string | null,
+    location: { lat, lng, accuracy },
+    text: string | null
 }
 ```
 
@@ -340,20 +423,29 @@ projects/
 | Stop | 赤 (#f44336) | GPS追跡停止 |
 | Photo | 青 (#2196F3) | 写真撮影 |
 | Data | 紫 (#9C27B0) | データ管理パネル表示 |
+| Settings | グレー (#607D8B) | 設定ダイアログ表示 |
 
 ### 6.2 データ管理パネル
 | ボタン | 色 | 機能 |
 |--------|-----|------|
 | List | オレンジ (#FF9800) | 写真一覧表示 |
 | Size | シアン (#00BCD4) | データサイズ表示 |
-| Save | 緑 (#4CAF50) | Firebase保存 |
-| Reload | インディゴ (#3F51B5) | Firebase読み込み |
+| Save | 緑 (#4CAF50) | Firebase保存 or KMZエクスポート |
+| Reload | インディゴ (#3F51B5) | Firebase読み込み or ファイルインポート |
+| Clear | グレー | データ初期化 |
 
-### 6.3 カメラUI
+### 6.3 設定ダイアログ
+| 設定項目 | 種別 | デフォルト |
+|---------|------|---------|
+| Show Clock | トグルスイッチ | ON |
+| Use Firebase | トグルスイッチ | OFF |
+| Show Facing Buttons | トグルスイッチ | ON |
+
+### 6.4 カメラUI
 | 状態 | 表示要素 |
 |------|----------|
 | 撮影前 | カメラプレビュー、シャッターボタン（白丸）、閉じるボタン |
-| 撮影後 | 撮影画像、方向ボタン×3（左・上・右）、Textボタン、Retakeボタン、閉じるボタン（保存後も維持） |
+| 撮影後 | 撮影画像、方向ダイアル（SVG）、±ボタン、角度表示、Forward/Backwardボタン（設定次第）、Textボタン、Retakeボタン、閉じるボタン |
 
 ---
 
@@ -379,7 +471,6 @@ projects/
 
 ### 7.4 IndexedDB関連エラー
 - 初期化失敗時はアラートを表示してページ再読み込みを促す
-- 削除がブロックされた場合はリトライ（最大3回）
 
 ---
 
@@ -391,8 +482,8 @@ projects/
 - **精度:** 緯度・経度ともに小数点以下5桁
 
 ### 8.2 データサイズ表示
-- 10MB以下: KB単位（4桁精度）
-- 10MB超: MB単位（4桁精度）
+- 10MB以下: KB単位
+- 10MB超: MB単位
 
 ### 8.3 距離計算
 - Haversine公式を使用
@@ -415,6 +506,7 @@ projects/
 ### 9.3 記録条件
 - GPS位置は60秒以上経過または20m以上移動で記録
 - 写真撮影はGPS追跡中のみ可能
+- Firebaseを使用しない場合、Saveボタンに前提条件なし（GPS追跡なしでも保存可能）
 
 ---
 
@@ -436,10 +528,12 @@ RouteLogger/
 │   ├── tracking.js         # GPS追跡・位置更新
 │   ├── camera.js           # カメラ・写真撮影
 │   ├── firebase-ops.js     # Firebase操作
+│   ├── kmz-handler.js      # KMZ/GeoJSONエクスポート・インポート
 │   ├── ui.js               # UIモジュール統合 (re-export)
-│   ├── ui-common.js        # 共通UI関数
+│   ├── ui-common.js        # 共通UI関数・Wake Lock管理
 │   ├── ui-photo.js         # 写真関連UI
 │   ├── ui-dialog.js        # ダイアログ関連UI
+│   ├── ui-settings.js      # 設定・時計UI
 │   ├── firebase-config.js  # Firebase設定
 │   └── firebase-config.template.js  # Firebase設定テンプレート
 ├── icons/
@@ -447,27 +541,29 @@ RouteLogger/
 │   ├── icon-192.png
 │   └── icon-512.png
 └── docs/
-    ├── funcspec-202601.md    # 旧機能仕様書
     ├── funcspec-202602.md    # 機能仕様書（本書）
-    ├── UsersGuide-202601.md  # 旧利用者の手引
     ├── UsersGuide-202602.md  # 利用者の手引
     └── FIREBASE_SETUP.md     # Firebase設定ガイド
 ```
 
 ### 10.1 モジュール構成
 
+| モジュール | 役割 | 主要エクスポート |
+|-----------|------|----------------|
 | config.js | 定数・設定 | DB_NAME, GPS_RECORD_*, PHOTO_* |
-| state.js | 状態管理 | map, isTracking, trackingData 等 |
+| state.js | 状態管理 | map, isTracking, trackingData, isFirebaseEnabled 等 |
 | utils.js | 汎用関数 | formatDateTime, calculateDistance 等 |
 | db.js | DB操作 | initIndexedDB, saveTrack, getAllPhotos 等 |
-| map.js | 地図機能 | initMap, updateCurrentMarker 等 |
+| map.js | 地図機能 | initMap, updateCurrentMarker, displayExternalGeoJSON 等 |
 | tracking.js | GPS追跡 | startTracking, stopTracking 等 |
-| camera.js | カメラ | takePhoto, capturePhoto 等 |
+| camera.js | カメラ | takePhoto, capturePhoto, drawArrowStamp 等 |
 | firebase-ops.js | Firebase | saveToFirebase, reloadFromFirebase 等 |
-| ui.js | UI統合 | (ui-common, ui-photo, ui-dialogの統合) |
-| ui-common.js | 共通UI | updateStatus, toggleVisibility 等 |
+| kmz-handler.js | KMZ/GeoJSON | exportToKmz, importKmz, importGeoJson 等 |
+| ui.js | UI統合 | (各UIモジュールのre-export) |
+| ui-common.js | 共通UI | updateStatus, setUiBusy, toggleVisibility 等 |
 | ui-photo.js | 写真UI | showPhotoList, showPhotoViewer 等 |
 | ui-dialog.js | ダイアログ | showDataSize, showDocumentListDialog 等 |
+| ui-settings.js | 設定・時計 | initClock, initSettings, showSettingsDialog 等 |
 | app-main.js | 初期化 | initApp, setupEventListeners 等 |
 
 ---
@@ -476,8 +572,9 @@ RouteLogger/
 
 | 日付 | バージョン | 内容 |
 |------|-----------|------|
-| 2026-01-22 | 202601 | 初版作成（現行コードからの機能仕様書化） |
-| 2026-01-24 | 202601 | GPS記録条件にGPS精度チェックを追加、写真解像度を720x1280pxに固定、写真品質を0.6に変更、コードをES6モジュール構成にリファクタリング、ファイル構成を更新 |
-| 2026-01-29 | 202601 | 写真撮影時にテキストメモを追加する機能を実装、Photo Galleryのタイトル表示を調整、保存データ構造にtextフィールドを追加 |
-| 2026-02-01 | 202601 | 写真撮影フローの改善（方向再選択時の上書き保存、保存後の画面維持、閉じるボタン追加）、GPS追跡時の合計記録点数表示の修正、UIボタンの調整 |
-| 2026-02-02 | 202602 | アプリ名を「RouteLogger」に変更。IndexedDB名を「RouteLoggerDB」に変更。キャッシュバージョン更新。 |
+| 2026-01-22 | 202601 | 初版作成 |
+| 2026-01-24 | 202601 | GPS記録条件・写真解像度・ES6モジュール構成更新 |
+| 2026-01-29 | 202601 | テキストメモ機能追加 |
+| 2026-02-01 | 202601 | 写真撮影フロー改善（上書き保存・保存後画面維持） |
+| 2026-02-02 | 202602 | アプリ名をRouteLoggerに変更、IndexedDB名更新 |
+| 2026-02-28 | 202602 | 写真方向をダイアル式に変更（角度数値+facing）、KMZ export/import機能追加、外部レイヤー表示機能追加、設定パネル追加（Firebase切替・時計・facingボタン）、Clearボタン追加、Wake Lock対象をSave/Loadにも拡張、IndexedDB v4（externals/external_photosストア追加）、FirestoreパスをtracksコレクションへIに変更 |
