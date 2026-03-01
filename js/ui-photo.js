@@ -155,9 +155,8 @@ function updatePhotoViewerUI(photo, index, total) {
     const fwdBtn = document.getElementById('viewerFacingForward');
     const bwdBtn = document.getElementById('viewerFacingBackward');
     if (fwdBtn && bwdBtn) {
-        const isBackward = photo.facing === 'backward';
-        fwdBtn.classList.toggle('active', !isBackward);
-        bwdBtn.classList.toggle('active', isBackward);
+        fwdBtn.classList.toggle('active', photo.facing === 'forward');
+        bwdBtn.classList.toggle('active', photo.facing === 'backward');
     }
 
     // Update counter
