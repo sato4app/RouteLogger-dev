@@ -18,7 +18,9 @@ function _startKbWatch() {
     const content = viewer?.querySelector('.viewer-content');
     _kbWatchHandler = () => {
         if (viewer) viewer.style.height = window.visualViewport.height + 'px';
-        if (content) setTimeout(() => { content.scrollTop = content.scrollHeight; }, 50);
+        if (content) requestAnimationFrame(() => {
+            requestAnimationFrame(() => { content.scrollTop = content.scrollHeight; });
+        });
     };
     window.visualViewport.addEventListener('resize', _kbWatchHandler);
 }
@@ -204,6 +206,7 @@ function updatePhotoViewerUI(photo, index, total) {
     const textEditor = document.getElementById('viewerTextEditor');
     if (textEditor) textEditor.classList.add('hidden');
     _stopKbWatch();
+    document.getElementById('photoViewer')?.classList.remove('editing');
 
     // Reset zoom when photo changes
     if (zoomController) {
@@ -314,6 +317,7 @@ export function initPhotoViewerControls() {
             textArea.blur(); // キーボードを閉じる
             _stopKbWatch();
             textEditor.classList.add('hidden');
+            document.getElementById('photoViewer').classList.remove('editing');
         };
 
         editTextBtn.onclick = () => {
@@ -321,12 +325,16 @@ export function initPhotoViewerControls() {
             if (!photo) return;
             textArea.value = photo.text || '';
             textEditor.classList.remove('hidden');
+            document.getElementById('photoViewer').classList.add('editing');
             _startKbWatch();
+            // レイアウト確定後すぐにtextareaへスクロール（キーボード表示前にも対応）
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    const content = document.querySelector('#photoViewer .viewer-content');
+                    if (content) content.scrollTop = content.scrollHeight;
+                });
+            });
             textArea.focus();
-            // キーボードが開いた後にtextareaをスクロールして表示
-            setTimeout(() => {
-                textArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 400);
         };
 
         // ボタンは pointerdown で処理（モバイルで blur より先に発火させるため preventDefault）
