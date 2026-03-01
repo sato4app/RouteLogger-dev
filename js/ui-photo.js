@@ -18,9 +18,14 @@ function _startKbWatch() {
     const content = viewer?.querySelector('.viewer-content');
     _kbWatchHandler = () => {
         if (viewer) viewer.style.height = window.visualViewport.height + 'px';
-        if (content) requestAnimationFrame(() => {
-            requestAnimationFrame(() => { content.scrollTop = content.scrollHeight; });
-        });
+        const textEditor = document.getElementById('viewerTextEditor');
+        if (textEditor && !textEditor.classList.contains('hidden')) {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    textEditor.scrollIntoView({ behavior: 'auto', block: 'center' });
+                });
+            });
+        }
     };
     window.visualViewport.addEventListener('resize', _kbWatchHandler);
 }
@@ -330,8 +335,7 @@ export function initPhotoViewerControls() {
             // レイアウト確定後すぐにtextareaへスクロール（キーボード表示前にも対応）
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    const content = document.querySelector('#photoViewer .viewer-content');
-                    if (content) content.scrollTop = content.scrollHeight;
+                    textEditor.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 });
             });
             textArea.focus();
