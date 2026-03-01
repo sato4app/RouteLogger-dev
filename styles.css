@@ -590,11 +590,58 @@ body {
 }
 
 #photoInfo {
-    margin-top: 20px;
-    text-align: center;
+    text-align: left;
     color: rgba(255, 255, 255, 0.7);
     font-size: 13px;
     line-height: 1.5;
+}
+
+.viewer-info-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 20px;
+    gap: 12px;
+}
+
+.viewer-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.viewer-facing-group {
+    display: flex;
+    gap: 4px;
+}
+
+.viewer-facing-btn {
+    padding: 6px 10px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.viewer-facing-btn.active {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    border-color: white;
+}
+
+.viewer-delete-btn {
+    padding: 6px 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 80, 80, 0.6);
+    background: transparent;
+    color: rgba(255, 100, 100, 0.9);
+    font-size: 12px;
+    cursor: pointer;
 }
 
 .float-right {

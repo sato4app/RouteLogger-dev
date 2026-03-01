@@ -1,7 +1,8 @@
 // RouteLogger - 写真関連UI
 
 import * as state from './state.js';
-import { getAllPhotos } from './db.js';
+import { getAllPhotos, updatePhoto, deletePhoto } from './db.js';
+import { removePhotoMarker } from './map.js';
 import { toggleVisibility, updateStatus } from './ui-common.js';
 
 let currentPhotoList = [];
@@ -150,6 +151,15 @@ function updatePhotoViewerUI(photo, index, total) {
 
     photoInfo.innerHTML = infoHTML;
 
+    // Facing ボタンのアクティブ状態を更新
+    const fwdBtn = document.getElementById('viewerFacingForward');
+    const bwdBtn = document.getElementById('viewerFacingBackward');
+    if (fwdBtn && bwdBtn) {
+        const isBackward = photo.facing === 'backward';
+        fwdBtn.classList.toggle('active', !isBackward);
+        bwdBtn.classList.toggle('active', isBackward);
+    }
+
     // Update counter
     if (total > 1) {
         counter.textContent = `${index + 1} of ${total}`;
@@ -209,6 +219,50 @@ export function initPhotoViewerControls() {
             e.stopPropagation();
             if (currentPhotoIndex < currentPhotoList.length - 1) {
                 currentPhotoIndex++;
+                updatePhotoViewerUI(currentPhotoList[currentPhotoIndex], currentPhotoIndex, currentPhotoList.length);
+            }
+        };
+    }
+
+    // Facing トグルボタン
+    const fwdBtn = document.getElementById('viewerFacingForward');
+    const bwdBtn = document.getElementById('viewerFacingBackward');
+
+    if (fwdBtn) {
+        fwdBtn.onclick = async () => {
+            const photo = currentPhotoList[currentPhotoIndex];
+            if (!photo) return;
+            photo.facing = 'forward';
+            await updatePhoto(photo);
+            fwdBtn.classList.add('active');
+            bwdBtn.classList.remove('active');
+        };
+    }
+    if (bwdBtn) {
+        bwdBtn.onclick = async () => {
+            const photo = currentPhotoList[currentPhotoIndex];
+            if (!photo) return;
+            photo.facing = 'backward';
+            await updatePhoto(photo);
+            bwdBtn.classList.add('active');
+            fwdBtn.classList.remove('active');
+        };
+    }
+
+    // Delete ボタン
+    const deleteBtn = document.getElementById('viewerDeleteBtn');
+    if (deleteBtn) {
+        deleteBtn.onclick = async () => {
+            if (!confirm('この写真を削除しますか？')) return;
+            const photo = currentPhotoList[currentPhotoIndex];
+            if (!photo) return;
+            await deletePhoto(photo.id);
+            removePhotoMarker(photo.id);
+            currentPhotoList.splice(currentPhotoIndex, 1);
+            if (currentPhotoList.length === 0) {
+                closePhotoViewer();
+            } else {
+                if (currentPhotoIndex >= currentPhotoList.length) currentPhotoIndex--;
                 updatePhotoViewerUI(currentPhotoList[currentPhotoIndex], currentPhotoIndex, currentPhotoList.length);
             }
         };
