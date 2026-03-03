@@ -242,7 +242,8 @@ function updatePhotoViewerUI(photo, index, total) {
 /**
  * 写真ビューアを閉じる
  */
-export function closePhotoViewer() {
+export async function closePhotoViewer() {
+    await _handlePendingEdit();
     toggleVisibility('photoViewer', false);
     if (state.isTracking) {
         const totalPoints = state.previousTotalPoints + state.trackingData.length;
