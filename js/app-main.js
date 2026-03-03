@@ -239,6 +239,15 @@ function setupEventListeners() {
     // Dataボタン（パネル表示切り替え）
     document.getElementById('dataBtn').addEventListener('click', toggleDataPanel);
 
+    // マップまたは1段目をタップしたらDataパネルを閉じる
+    document.getElementById('map').addEventListener('click', returnToMainControl);
+    document.getElementById('controls').addEventListener('click', (e) => {
+        // dataBtnはtoggleDataPanelが制御するので除外
+        if (!e.target.closest('#dataBtn')) {
+            returnToMainControl();
+        }
+    });
+
     // Settingsボタン
     document.getElementById('settingsBtn').addEventListener('click', () => {
         showSettingsDialog();
