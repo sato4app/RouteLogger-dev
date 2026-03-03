@@ -10,6 +10,8 @@ let currentPhotoIndex = -1;
 let currentDisplayedPhoto = null;
 let zoomController = null;
 let _kbWatchHandler = null;
+let _doSave = null;
+let _doCancel = null;
 
 /** キーボード表示時にビューアーを可視領域に収める */
 function _startKbWatch() {
@@ -43,6 +45,17 @@ function _stopKbWatch() {
     _kbWatchHandler = null;
     const viewer = document.getElementById('photoViewer');
     if (viewer) viewer.style.height = '';
+}
+
+/** テキスト編集中なら保存/破棄を確認してから続行 */
+async function _handlePendingEdit() {
+    const textEditor = document.getElementById('viewerTextEditor');
+    if (!textEditor || textEditor.classList.contains('hidden')) return;
+    if (confirm('テキストの変更を保存しますか？\nOK: 保存して移動　キャンセル: 変更を破棄して移動')) {
+        if (_doSave) await _doSave();
+    } else {
+        if (_doCancel) _doCancel();
+    }
 }
 
 /**
@@ -253,8 +266,9 @@ export function initPhotoViewerControls() {
     const nextBtn = document.getElementById('nextPhotoBtn');
 
     if (prevBtn) {
-        prevBtn.onclick = (e) => {
+        prevBtn.onclick = async (e) => {
             e.stopPropagation();
+            await _handlePendingEdit();
             if (currentPhotoIndex > 0) {
                 currentPhotoIndex--;
                 updatePhotoViewerUI(currentPhotoList[currentPhotoIndex], currentPhotoIndex, currentPhotoList.length);
@@ -263,8 +277,9 @@ export function initPhotoViewerControls() {
     }
 
     if (nextBtn) {
-        nextBtn.onclick = (e) => {
+        nextBtn.onclick = async (e) => {
             e.stopPropagation();
+            await _handlePendingEdit();
             if (currentPhotoIndex < currentPhotoList.length - 1) {
                 currentPhotoIndex++;
                 updatePhotoViewerUI(currentPhotoList[currentPhotoIndex], currentPhotoIndex, currentPhotoList.length);
@@ -337,6 +352,10 @@ export function initPhotoViewerControls() {
             document.getElementById('photoViewer').classList.remove('editing');
         };
 
+        // モジュールレベル変数に参照を保持（_handlePendingEdit から呼び出すため）
+        _doSave = doSave;
+        _doCancel = doCancel;
+
         editTextBtn.onclick = () => {
             const photo = currentDisplayedPhoto;
             if (!photo) return;
@@ -381,6 +400,8 @@ export function initPhotoViewerControls() {
     if (deleteBtn) {
         deleteBtn.onclick = async () => {
             if (!confirm('この写真を削除しますか？')) return;
+            // 編集中なら破棄（削除するので保存不要）
+            if (_doCancel) _doCancel();
             const photo = currentPhotoList[currentPhotoIndex];
             if (!photo) return;
             await deletePhoto(photo.id);
