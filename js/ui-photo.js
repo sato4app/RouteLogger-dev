@@ -305,7 +305,12 @@ export function initPhotoViewerControls() {
             if (!photo) return;
             const isFwd = !fwdBtn.classList.contains('active');
             const isBwd = bwdBtn.classList.contains('active');
-            photo.facing = computeFacing(isFwd, isBwd);
+            const newFacing = computeFacing(isFwd, isBwd);
+            photo.facing = newFacing;
+            // currentDisplayedPhotoが別オブジェクトの場合も同期（doSaveによる巻き戻し防止）
+            if (currentDisplayedPhoto && currentDisplayedPhoto !== photo) {
+                currentDisplayedPhoto.facing = newFacing;
+            }
             await updatePhoto(photo);
             fwdBtn.classList.toggle('active', isFwd);
         };
@@ -316,7 +321,12 @@ export function initPhotoViewerControls() {
             if (!photo) return;
             const isFwd = fwdBtn.classList.contains('active');
             const isBwd = !bwdBtn.classList.contains('active');
-            photo.facing = computeFacing(isFwd, isBwd);
+            const newFacing = computeFacing(isFwd, isBwd);
+            photo.facing = newFacing;
+            // currentDisplayedPhotoが別オブジェクトの場合も同期（doSaveによる巻き戻し防止）
+            if (currentDisplayedPhoto && currentDisplayedPhoto !== photo) {
+                currentDisplayedPhoto.facing = newFacing;
+            }
             await updatePhoto(photo);
             bwdBtn.classList.toggle('active', isBwd);
         };
