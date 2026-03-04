@@ -167,14 +167,16 @@ function setupEventListeners() {
         document.getElementById('dirFacingBackward').classList.toggle('active', isBwd);
     }
 
-    // Forward/Backward 独立on/off
+    // Forward/Backward トグル（どちらか一方のみ選択可能）
     document.getElementById('dirFacingForward').addEventListener('click', () => {
-        currentFacingForward = !currentFacingForward;
+        currentFacingForward = true;
+        currentFacingBackward = false;
         updateFacingUI(currentFacingForward, currentFacingBackward);
         savePhotoWithDirection(currentDialAngle, computeFacing(currentFacingForward, currentFacingBackward));
     });
     document.getElementById('dirFacingBackward').addEventListener('click', () => {
-        currentFacingBackward = !currentFacingBackward;
+        currentFacingForward = false;
+        currentFacingBackward = true;
         updateFacingUI(currentFacingForward, currentFacingBackward);
         savePhotoWithDirection(currentDialAngle, computeFacing(currentFacingForward, currentFacingBackward));
     });
