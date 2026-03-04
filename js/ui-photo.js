@@ -74,7 +74,8 @@ export async function showPhotoFromMarker(photo) {
         }
 
         if (index !== -1) {
-            showPhotoViewer(photo, allPhotos, index);
+            // DBから取得した最新データを使う（マーカーのphotoオブジェクトは古い可能性がある）
+            showPhotoViewer(allPhotos[index], allPhotos, index);
         } else {
             console.warn('マーカーの画像がデータベース内で見つかりませんでした。単一表示します。');
             showPhotoViewer(photo, [photo], 0);
