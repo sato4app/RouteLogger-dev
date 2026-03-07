@@ -353,6 +353,7 @@ function setupEventListeners() {
                 if (docName) {
                     setUiBusy(true);
                     try {
+                        updateStatus(`Save to cloud as "${docName}"...`);
                         await saveToFirebase(docName);
                     } finally {
                         setUiBusy(false);
@@ -365,6 +366,7 @@ function setupEventListeners() {
                     try {
                         const tracks = await getAllTracks();
                         const photos = await getAllPhotos();
+                        updateStatus(`Save to file as "${docName}.kmz"...`);
                         await exportToKmz(tracks, photos, docName);
                     } catch (e) {
                         console.error('エクスポートエラー:', e);

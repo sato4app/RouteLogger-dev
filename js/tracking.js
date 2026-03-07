@@ -53,8 +53,12 @@ export async function releaseWakeLock() {
  * ページの可視性が変化した時の処理
  */
 export async function handleVisibilityChange() {
-    if (document.visibilityState === 'visible' && state.isTracking) {
-
+    if (document.visibilityState === 'hidden') {
+        // 画面がロック/バックグラウンド時にフォーカスを外す（シェイクでUndoダイアログ防止）
+        if (document.activeElement && document.activeElement !== document.body) {
+            document.activeElement.blur();
+        }
+    } else if (document.visibilityState === 'visible' && state.isTracking) {
         await requestWakeLock();
     }
 }

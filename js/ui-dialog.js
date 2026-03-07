@@ -46,6 +46,7 @@ export function showDocNameDialog(defaultName) {
             okBtn.removeEventListener('click', handleOk);
             cancelBtn.removeEventListener('click', handleCancel);
             input.removeEventListener('keypress', handleKeyPress);
+            input.blur(); // フォーカスを外してシェイクでUndoダイアログが出ないようにする
             toggleVisibility(dialogId, false);
         };
 

@@ -180,6 +180,7 @@ export async function retakePhoto() {
     state.setCurrentPhotoId(null);
     state.setCapturedPhotoLocation(null);
     currentPhotoText = '';
+    updateTextBtnState();
 
     // セッション枚数を減らす（キャンセル扱い）
     if (state.photosInSession > 0) {
@@ -216,6 +217,7 @@ export async function capturePhoto() {
     const directionButtons = document.getElementById('directionButtons');
 
     currentPhotoText = ''; // Reset text
+    updateTextBtnState();
     state.setCurrentPhotoId(null); // Reset ID
 
     const srcWidth = cameraPreview.videoWidth;
@@ -378,10 +380,16 @@ export async function savePhotoWithDirection(direction, facing = 'forward') {
 /**
  * テキスト入力ボタン処理
  */
+function updateTextBtnState() {
+    const textBtn = document.getElementById('cameraTextBtn');
+    if (textBtn) textBtn.classList.toggle('primary', !!currentPhotoText);
+}
+
 export function handleTextButton() {
     const text = prompt('写真へのメモを入力してください:', currentPhotoText);
     if (text !== null) {
         currentPhotoText = text;
+        updateTextBtnState();
 
         if (text) {
 
