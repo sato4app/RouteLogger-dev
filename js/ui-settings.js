@@ -2,6 +2,7 @@
 
 import * as state from './state.js';
 import { toggleVisibility } from './ui-common.js';
+import { signOutUser } from './auth.js';
 
 let clockInterval = null;
 
@@ -38,9 +39,30 @@ function updateClock() {
 }
 
 /**
+ * ユーザー情報セクションの表示を更新
+ */
+export function updateSettingsUserInfo() {
+    const authSection = document.getElementById('authSettingSection');
+    const usernameEl = document.getElementById('settingsUsernameDisplay');
+    const emailEl = document.getElementById('settingsEmailDisplay');
+    if (!authSection) return;
+
+    if (state.currentUserInfo) {
+        authSection.classList.remove('hidden');
+        if (usernameEl) usernameEl.textContent = `@${state.currentUserInfo.username}`;
+        if (emailEl) emailEl.textContent = state.currentUserInfo.email;
+    } else {
+        authSection.classList.add('hidden');
+    }
+}
+
+/**
  * 設定ダイアログを表示
  */
 export function showSettingsDialog() {
+    // ユーザー情報を更新
+    updateSettingsUserInfo();
+
     // 現在の設定値をUIに反映
     const showClockToggle = document.getElementById('showClockToggle');
     if (showClockToggle) {
@@ -138,5 +160,20 @@ export function initSettings() {
     const savedMinooEmergency = localStorage.getItem('routeLogger_minooEmergency');
     if (savedMinooEmergency !== null) {
         state.setIsMinooEmergencyEnabled(savedMinooEmergency === 'true');
+    }
+
+    // Sign Out Button
+    const settingsSignOutBtn = document.getElementById('settingsSignOutBtn');
+    if (settingsSignOutBtn) {
+        settingsSignOutBtn.addEventListener('click', async () => {
+            if (!confirm('サインアウトしますか？')) return;
+            try {
+                await signOutUser();
+                state.setCurrentUserInfo(null);
+                updateSettingsUserInfo();
+            } catch (error) {
+                console.error('サインアウトエラー:', error);
+            }
+        });
     }
 }

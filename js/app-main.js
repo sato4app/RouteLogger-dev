@@ -6,10 +6,12 @@ import { initMap, displayPhotoMarkers } from './map.js';
 import { startTracking, stopTracking, handleVisibilityChange, handleDeviceOrientation } from './tracking.js';
 import { takePhoto, closeCameraDialog, capturePhoto, savePhotoWithDirection, handleTextButton, retakePhoto } from './camera.js';
 import { saveToFirebase, reloadFromFirebase } from './firebase-ops.js';
-import { updateStatus, showPhotoList, closePhotoList, closePhotoViewer, showDataSize, closeStatsDialog, closeDocumentListDialog, showPhotoFromMarker, initPhotoViewerControls, initClock, initSettings, showSettingsDialog, showDocNameDialog, setUiBusy } from './ui.js';
+import { updateStatus, showPhotoList, closePhotoList, closePhotoViewer, showDataSize, closeStatsDialog, closeDocumentListDialog, showPhotoFromMarker, initPhotoViewerControls, initClock, initSettings, showSettingsDialog, showDocNameDialog, setUiBusy, updateSettingsUserInfo } from './ui.js';
 import { getAllExternalData, getAllTracks, getAllPhotos, clearIndexedDBSilent, clearRouteLogData, restoreTrack, savePhoto } from './db.js';
 import { displayExternalGeoJSON, displayAllTracks, clearMapData, displayEmergencyPoints, clearEmergencyPoints } from './map.js';
 import { exportToKmz } from './kmz-handler.js';
+import { tryCompleteEmailLinkSignIn, getUserByUid, updateLastLogin, signOutUser } from './auth.js';
+import { showLoginDialog, showRegisterDialog, initAuthUI } from './ui-auth.js';
 
 /**
  * アプリケーション初期化
@@ -18,6 +20,42 @@ async function initApp() {
     // 時計と設定の初期化
     initClock();
     initSettings();
+
+    // 認証UIの初期化
+    initAuthUI((userInfo) => {
+        state.setCurrentUserInfo(userInfo);
+        updateSettingsUserInfo();
+        alert(`登録完了！ようこそ @${userInfo.username} さん\nクラウド機能をお使いください。`);
+    });
+
+    // Firebase Auth 状態監視
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user) {
+            state.setCurrentUserInfo(null);
+            updateSettingsUserInfo();
+        }
+    });
+
+    // メールリンクからのサインイン完了チェック
+    try {
+        const result = await tryCompleteEmailLinkSignIn();
+        if (result) {
+            const userInfo = await getUserByUid(result.user.uid);
+            if (!userInfo) {
+                showRegisterDialog(result.user.email);
+            } else if (userInfo.status === 'rejected' || userInfo.status === 'disabled') {
+                alert('このアカウントは無効化されています。');
+                await signOutUser();
+            } else {
+                state.setCurrentUserInfo(userInfo);
+                await updateLastLogin(userInfo.username);
+                updateSettingsUserInfo();
+            }
+        }
+    } catch (error) {
+        console.error('サインイン処理エラー:', error);
+        alert('サインイン処理中にエラーが発生しました: ' + error.message);
+    }
 
     // IndexedDB初期化
     try {
@@ -81,18 +119,37 @@ async function initApp() {
 }
 
 /**
- * Firebase匿名認証を確実に行う
+ * Firebase認証を確認し、未ログインの場合はログインダイアログを表示
+ * @returns {boolean} 認証済みかどうか
  */
 async function ensureFirebaseAuth() {
-    if (firebase.auth().currentUser) return true;
+    const currentUser = firebase.auth().currentUser;
+    if (!currentUser) {
+        showLoginDialog();
+        return false;
+    }
+
+    // すでにuserInfo取得済みならOK
+    if (state.currentUserInfo) return true;
+
     try {
-        await firebase.auth().signInAnonymously();
-        state.setFirebaseAuthReady(true);
+        const userInfo = await getUserByUid(currentUser.uid);
+        if (!userInfo) {
+            showRegisterDialog(currentUser.email);
+            return false;
+        }
+        if (userInfo.status === 'rejected' || userInfo.status === 'disabled') {
+            alert('このアカウントは無効化されています。');
+            await signOutUser();
+            state.setCurrentUserInfo(null);
+            return false;
+        }
+        state.setCurrentUserInfo(userInfo);
+        await updateLastLogin(userInfo.username);
+        updateSettingsUserInfo();
         return true;
-    } catch (authError) {
-        console.error('Firebase認証エラー:', authError);
-        state.setFirebaseAuthReady(false);
-        alert('Firebase認証に失敗しました: ' + authError.message);
+    } catch (error) {
+        console.error('ユーザー情報取得エラー:', error);
         return false;
     }
 }

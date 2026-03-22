@@ -1057,6 +1057,47 @@ body {
     color: var(--text-sub);
 }
 
+/* Auth UI */
+.dialog-desc {
+    font-size: 14px;
+    color: var(--text-sub);
+    margin: 0 0 16px;
+    line-height: 1.5;
+}
+
+.error-msg {
+    font-size: 13px;
+    color: var(--danger-color);
+    margin: 4px 0 0;
+    min-height: 18px;
+}
+
+.login-sent-msg {
+    margin-top: 16px;
+    text-align: center;
+}
+
+.login-sent-msg p {
+    font-size: 14px;
+    color: #34C759;
+    margin: 0 0 10px;
+}
+
+.auth-setting-section {
+    background: #f8f8f8;
+    border-radius: 10px;
+    padding: 10px 12px !important;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #e0e0e0 !important;
+}
+
+.sign-out-btn {
+    font-size: 12px !important;
+    padding: 5px 12px !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 /* Toggle Switch */
 .toggle-switch {
     position: relative;

@@ -35,6 +35,10 @@ export let db = null;
 // Firebase
 export let firebaseAuthReady = false;
 
+// Auth
+export let currentUserInfo = null;
+export function setCurrentUserInfo(value) { currentUserInfo = value; }
+
 // 状態更新関数
 export function setMap(value) { map = value; }
 export function setCurrentMarker(value) { currentMarker = value; }
