@@ -71,6 +71,9 @@ export function setIsFirebaseEnabled(value) { isFirebaseEnabled = value; }
 export let isShowFacingButtons = true;
 export function setIsShowFacingButtons(value) { isShowFacingButtons = value; }
 
+export let isMinooEmergencyEnabled = false;
+export function setIsMinooEmergencyEnabled(value) { isMinooEmergencyEnabled = value; }
+
 // 配列操作
 export function addPhotoMarker(marker) { photoMarkers.push(marker); }
 export function clearPhotoMarkers() { photoMarkers = []; }

@@ -57,6 +57,11 @@ export function showSettingsDialog() {
         showFacingToggle.checked = state.isShowFacingButtons;
     }
 
+    const minooEmergencyToggle = document.getElementById('minooEmergencyToggle');
+    if (minooEmergencyToggle) {
+        minooEmergencyToggle.checked = state.isMinooEmergencyEnabled;
+    }
+
     toggleVisibility('settingsDialog', true);
 }
 
@@ -120,5 +125,18 @@ export function initSettings() {
     const savedFacingSetting = localStorage.getItem('routeLogger_showFacingButtons');
     if (savedFacingSetting !== null) {
         state.setIsShowFacingButtons(savedFacingSetting === 'true');
+    }
+
+    // Minoo Emergency Toggle
+    const minooEmergencyToggle = document.getElementById('minooEmergencyToggle');
+    if (minooEmergencyToggle) {
+        minooEmergencyToggle.addEventListener('change', (e) => {
+            state.setIsMinooEmergencyEnabled(e.target.checked);
+            localStorage.setItem('routeLogger_minooEmergency', e.target.checked);
+        });
+    }
+    const savedMinooEmergency = localStorage.getItem('routeLogger_minooEmergency');
+    if (savedMinooEmergency !== null) {
+        state.setIsMinooEmergencyEnabled(savedMinooEmergency === 'true');
     }
 }

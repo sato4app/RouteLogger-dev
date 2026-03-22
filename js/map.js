@@ -415,6 +415,52 @@ export function displayExternalGeoJSON(geoJson) {
 }
 
 /**
+ * 箕面緊急ポイントを地図に表示
+ */
+export async function displayEmergencyPoints() {
+    if (!state.map) return;
+
+    try {
+        const response = await fetch('./data/minoo-emergency-points.geojson');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const geojson = await response.json();
+
+        L.geoJSON(geojson, {
+            pointToLayer: (feature, latlng) => {
+                return L.circleMarker(latlng, {
+                    radius: 7,
+                    fillColor: '#FF3300',
+                    color: '#CC0000',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+            },
+            onEachFeature: (feature, layer) => {
+                if (feature.properties) {
+                    const id = feature.properties.id ?? feature.id ?? '';
+                    const name = feature.properties.name || '';
+                    layer.bindPopup(`<b>id:</b> ${id}<br><b>name:</b> ${name}`);
+                }
+            }
+        }).eachLayer(layer => {
+            layer.addTo(state.map);
+            state.addOfficialMarker(layer);
+        });
+    } catch (error) {
+        console.error('緊急ポイント読み込みエラー:', error);
+    }
+}
+
+/**
+ * 箕面緊急ポイントを地図から削除
+ */
+export function clearEmergencyPoints() {
+    state.officialMarkers.forEach(marker => state.map.removeLayer(marker));
+    state.clearOfficialMarkers();
+}
+
+/**
  * 全てのトラックデータを表示
  * @param {Array} tracks - トラックデータの配列
  */

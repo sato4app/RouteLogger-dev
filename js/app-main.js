@@ -8,7 +8,7 @@ import { takePhoto, closeCameraDialog, capturePhoto, savePhotoWithDirection, han
 import { saveToFirebase, reloadFromFirebase } from './firebase-ops.js';
 import { updateStatus, showPhotoList, closePhotoList, closePhotoViewer, showDataSize, closeStatsDialog, closeDocumentListDialog, showPhotoFromMarker, initPhotoViewerControls, initClock, initSettings, showSettingsDialog, showDocNameDialog, setUiBusy } from './ui.js';
 import { getAllExternalData, getAllTracks, getAllPhotos, clearIndexedDBSilent, clearRouteLogData, restoreTrack, savePhoto } from './db.js';
-import { displayExternalGeoJSON, displayAllTracks, clearMapData } from './map.js';
+import { displayExternalGeoJSON, displayAllTracks, clearMapData, displayEmergencyPoints, clearEmergencyPoints } from './map.js';
 import { exportToKmz } from './kmz-handler.js';
 
 /**
@@ -36,6 +36,11 @@ async function initApp() {
 
     // 地図初期化
     await initMap();
+
+    // 箕面緊急ポイント初期表示
+    if (state.isMinooEmergencyEnabled) {
+        await displayEmergencyPoints();
+    }
 
     // トラックデータ表示
     try {
@@ -254,6 +259,18 @@ function setupEventListeners() {
     document.getElementById('settingsBtn').addEventListener('click', () => {
         showSettingsDialog();
     });
+
+    // 箕面緊急ポイント トグル
+    const minooEmergencyToggle = document.getElementById('minooEmergencyToggle');
+    if (minooEmergencyToggle) {
+        minooEmergencyToggle.addEventListener('change', async (e) => {
+            if (e.target.checked) {
+                await displayEmergencyPoints();
+            } else {
+                clearEmergencyPoints();
+            }
+        });
+    }
 
     // データ管理パネル
     document.getElementById('photoListBtn').addEventListener('click', async () => {
