@@ -73,6 +73,9 @@ export async function saveToFirebase(providedName) {
         const projectRef = firestoreDb.collection('tracks').doc(projectName);
         const projectData = {
             userId: currentUser ? currentUser.uid : null,
+            username: localStorage.getItem('routeLogger_username') || null,
+            email: localStorage.getItem('routeLogger_email') || null,
+            displayName: localStorage.getItem('routeLogger_displayName') || null,
             startTime: state.trackingStartTime,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             tracks: formattedTracks,

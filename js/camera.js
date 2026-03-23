@@ -1,6 +1,66 @@
 // RouteLogger - カメラ・写真関連
 
 let currentPhotoText = '';
+let _compassHeading = null;       // リアルタイムで更新されるコンパス値
+let _capturedCompassHeading = null; // 撮影時に確定したコンパス値
+let _compassListener = null;
+
+/**
+ * 0～360° を16方位の日本語文字列に変換
+ * @param {number} deg
+ * @returns {string}
+ */
+function degreeToCompassString(deg) {
+    const dirs = ['北','北北東','北東','東北東','東','東南東','南東','南南東',
+                  '南','南南西','南西','西南西','西','西北西','北西','北北西'];
+    return dirs[Math.round(deg / 22.5) % 16];
+}
+
+/**
+ * コンパス監視を開始（takePhoto時に呼ぶ）
+ */
+async function startCompassWatch() {
+    _compassHeading = null;
+    if (_compassListener) return;
+
+    // iOS 13+ はユーザージェスチャー内でパーミッション取得が必要
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+            const perm = await DeviceOrientationEvent.requestPermission();
+            if (perm !== 'granted') return;
+        } catch (e) {
+            return;
+        }
+    }
+
+    _compassListener = (event) => {
+        let heading = null;
+        if (typeof event.webkitCompassHeading === 'number') {
+            // iOS: 磁北基準の真のコンパス値
+            heading = event.webkitCompassHeading;
+        } else if (event.alpha !== null) {
+            // Android/その他: alpha は地磁気北からの回転（絶対値ならそのまま利用）
+            heading = (360 - event.alpha) % 360;
+        }
+        if (heading !== null) {
+            _compassHeading = Math.round(heading);
+        }
+    };
+    window.addEventListener('deviceorientation', _compassListener);
+}
+
+/**
+ * コンパス監視を停止（closeCameraDialog時に呼ぶ）
+ */
+function stopCompassWatch() {
+    if (_compassListener) {
+        window.removeEventListener('deviceorientation', _compassListener);
+        _compassListener = null;
+    }
+    _compassHeading = null;
+    _capturedCompassHeading = null;
+}
 
 import { PHOTO_WIDTH, PHOTO_HEIGHT, PHOTO_QUALITY } from './config.js';
 import * as state from './state.js';
@@ -129,6 +189,7 @@ export async function takePhoto() {
         state.setCameraStream(stream);
         cameraPreview.srcObject = stream;
 
+        startCompassWatch();
         updateStatus('カメラ準備完了');
     } catch (error) {
         console.error('カメラエラー:', error);
@@ -156,6 +217,7 @@ export function closeCameraDialog() {
         state.cameraStream.getTracks().forEach(track => track.stop());
         state.setCameraStream(null);
     }
+    stopCompassWatch();
     state.setCapturedPhotoData(null);
 
     updateStatus(state.isTracking ? `GPS記録中 (${state.trackingData.length}点記録)` : 'GPS待機中...');
@@ -180,6 +242,7 @@ export async function retakePhoto() {
     state.setCurrentPhotoId(null);
     state.setCapturedPhotoLocation(null);
     currentPhotoText = '';
+    _capturedCompassHeading = null;
     updateTextBtnState();
 
     // セッション枚数を減らす（キャンセル扱い）
@@ -217,6 +280,7 @@ export async function capturePhoto() {
     const directionButtons = document.getElementById('directionButtons');
 
     currentPhotoText = ''; // Reset text
+    _capturedCompassHeading = _compassHeading; // 撮影時のコンパス値を確定
     updateTextBtnState();
     state.setCurrentPhotoId(null); // Reset ID
 
@@ -270,6 +334,8 @@ export async function capturePhoto() {
             data: state.capturedPhotoData,
             timestamp: new Date().toISOString(),
             direction: '',
+            compassHeading: _capturedCompassHeading,
+            compassDirection: _capturedCompassHeading !== null ? degreeToCompassString(_capturedCompassHeading) : null,
             location: location ? {
                 lat: parseFloat(location.lat.toFixed(5)),
                 lng: parseFloat(location.lng.toFixed(5))
@@ -319,6 +385,8 @@ export async function savePhotoWithDirection(direction, facing = 'forward') {
             timestamp: new Date().toISOString(),
             direction: direction,
             facing: facing,
+            compassHeading: _capturedCompassHeading,
+            compassDirection: _capturedCompassHeading !== null ? degreeToCompassString(_capturedCompassHeading) : null,
             location: location ? {
                 lat: parseFloat(location.lat.toFixed(5)),
                 lng: parseFloat(location.lng.toFixed(5))

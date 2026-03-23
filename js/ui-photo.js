@@ -197,6 +197,12 @@ function updatePhotoViewerUI(photo, index, total) {
         infoHTML += '<br>位置情報なし';
     }
 
+    if (photo.compassDirection != null || photo.compassHeading != null) {
+        const dir = photo.compassDirection ?? '';
+        const deg = photo.compassHeading != null ? `${photo.compassHeading}°` : '';
+        infoHTML += `<br>撮影方向: ${dir}${dir && deg ? ' ' : ''}${deg}`;
+    }
+
     if (photo.text) {
         infoHTML += `<br><br><span style="white-space: pre-wrap;">${photo.text}</span>`;
     }
