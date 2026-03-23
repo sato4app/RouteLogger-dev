@@ -14,7 +14,7 @@ export async function checkAndUpdateUserStatus() {
     const statusEl = document.getElementById('userRegistrationStatus');
 
     if (!username) {
-        if (display) display.textContent = '@（ユーザ登録なし）';
+        if (display) display.textContent = '';
         if (statusEl) statusEl.textContent = '';
         return;
     }
@@ -26,7 +26,9 @@ export async function checkAndUpdateUserStatus() {
         await signInAnonymously();
         const userInfo = await getUserByUsername(username);
         if (userInfo && userInfo.status !== 'denied' && userInfo.status !== 'disabled') {
-            if (statusEl) statusEl.textContent = '（登録確認済み）';
+            if (statusEl) statusEl.textContent = '（ユーザー登録確認済み）';
+        } else {
+            if (statusEl) statusEl.textContent = '（ユーザー登録なし）';
         }
     } catch (e) {
         // ネットワークエラー等は無視
