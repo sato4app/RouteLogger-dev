@@ -113,7 +113,7 @@ export function initAuthUI() {
             if (msg) msg.textContent = e.message;
         } finally {
             saveBtn.disabled = false;
-            saveBtn.textContent = 'OK';
+            saveBtn.textContent = '登録';
         }
     });
 

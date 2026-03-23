@@ -469,6 +469,13 @@ body {
     color: white;
 }
 
+.primary-btn:disabled {
+    background: #bbb;
+    color: #eee;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .secondary-btn {
     background: #E5E5EA;
     color: var(--text-main);
