@@ -88,6 +88,21 @@ export async function saveToFirebase(providedName) {
         updateStatus('Firebase保存完了');
         alert(`Firebaseに保存しました\nルート名: ${projectName}\n記録点数: ${trackStats.totalPoints}件\n写真: ${allPhotos.length}件`);
 
+        // KMZ生成・メール送信をCloud Functionで非同期実行
+        const username = localStorage.getItem('routeLogger_username');
+        if (username) {
+            updateStatus('KMZ生成・メール送信中...');
+            try {
+                const generateKmz = firebase.app().functions('asia-northeast1')
+                    .httpsCallable('generateKmzAndSendEmail');
+                const result = await generateKmz({ projectName });
+                updateStatus(`KMZ送信完了 → ${result.data.sentTo}`);
+            } catch (kmzError) {
+                console.warn('KMZ生成・メール送信に失敗しました:', kmzError.message);
+                updateStatus(`KMZ送信失敗: ${kmzError.message}`);
+            }
+        }
+
     } catch (error) {
         console.error('Firebase保存エラー:', error);
         updateStatus('Firebase保存エラー');
