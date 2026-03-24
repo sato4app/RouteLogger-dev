@@ -39,14 +39,16 @@ async function startCompassWatch() {
         if (typeof event.webkitCompassHeading === 'number') {
             // iOS: 磁北基準の真のコンパス値
             heading = event.webkitCompassHeading;
-        } else if (event.alpha !== null) {
-            // Android/その他: alpha は地磁気北からの回転（絶対値ならそのまま利用）
+        } else if (event.alpha !== null && event.absolute === true) {
+            // Android: absolute=true のときのみ磁北基準として利用可能
             heading = (360 - event.alpha) % 360;
         }
         if (heading !== null) {
             _compassHeading = Math.round(heading);
         }
     };
+    // deviceorientationabsolute: Android で磁北基準の絶対方位を取得するための専用イベント
+    window.addEventListener('deviceorientationabsolute', _compassListener);
     window.addEventListener('deviceorientation', _compassListener);
 }
 
@@ -55,6 +57,7 @@ async function startCompassWatch() {
  */
 function stopCompassWatch() {
     if (_compassListener) {
+        window.removeEventListener('deviceorientationabsolute', _compassListener);
         window.removeEventListener('deviceorientation', _compassListener);
         _compassListener = null;
     }
