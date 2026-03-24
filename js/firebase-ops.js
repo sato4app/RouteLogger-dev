@@ -74,8 +74,6 @@ export async function saveToFirebase(providedName) {
         const projectData = {
             userId: currentUser ? currentUser.uid : null,
             username: localStorage.getItem('routeLogger_username') || null,
-            email: localStorage.getItem('routeLogger_email') || null,
-            displayName: localStorage.getItem('routeLogger_displayName') || null,
             startTime: state.trackingStartTime,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             tracks: formattedTracks,
@@ -301,6 +299,9 @@ async function uploadPhotosToStorage(storage, projectName, photos) {
                     timestamp: photo.timestamp,
                     direction: photo.direction || null,
                     facing: photo.facing || null,
+                    compass: (photo.compassDirection != null || photo.compassHeading != null)
+                        ? `${photo.compassDirection ?? ''}${photo.compassHeading != null ? `（${photo.compassHeading}°）` : ''}`
+                        : null,
                     location: formatPositionData(photo.location),
                     text: photo.text || null
                 });
