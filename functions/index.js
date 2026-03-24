@@ -229,28 +229,36 @@ exports.generateKmzAndSendEmail = functions
             ? new Date(trackData.startTime).toLocaleString('ja-JP')
             : '';
 
-        await transporter.sendMail({
-            from: process.env.SMTP_FROM || smtpUser,
-            to: recipientEmail,
-            subject: `RouteLogger: ${projectName}`,
-            text: [
-                'RouteLogger からKMZファイルをお送りします。',
-                '',
-                `ルート名: ${projectName}`,
-                startTime ? `記録開始: ${startTime}` : '',
-                `記録点数: ${trackStats}件`,
-                `写真: ${photoCount}件`,
-                '',
-                '添付の .kmz ファイルを Google Earth などで開いてください。',
-            ].filter(Boolean).join('\n'),
-            attachments: [
-                {
-                    filename: `${projectName}.kmz`,
-                    content: kmzBuffer,
-                    contentType: 'application/vnd.google-earth.kmz',
-                },
-            ],
-        });
+        try {
+            await transporter.sendMail({
+                from: process.env.SMTP_FROM || smtpUser,
+                to: recipientEmail,
+                subject: `RouteLogger: ${projectName}`,
+                text: [
+                    'RouteLogger からKMZファイルをお送りします。',
+                    '',
+                    `ルート名: ${projectName}`,
+                    startTime ? `記録開始: ${startTime}` : '',
+                    `記録点数: ${trackStats}件`,
+                    `写真: ${photoCount}件`,
+                    '',
+                    '添付の .kmz ファイルを Google Earth などで開いてください。',
+                ].filter(Boolean).join('\n'),
+                attachments: [
+                    {
+                        filename: `${projectName}.kmz`,
+                        content: kmzBuffer,
+                        contentType: 'application/vnd.google-earth.kmz',
+                    },
+                ],
+            });
+        } catch (mailError) {
+            functions.logger.error(`メール送信エラー: ${mailError.message}`, { code: mailError.code, response: mailError.response });
+            throw new functions.https.HttpsError(
+                'internal',
+                `メール送信に失敗しました: ${mailError.message}`
+            );
+        }
 
         functions.logger.info(`KMZ送信完了: ${projectName} → ${recipientEmail}`);
         return { success: true, sentTo: recipientEmail };
