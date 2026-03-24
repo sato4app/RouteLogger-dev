@@ -297,76 +297,86 @@ function setupEventListeners() {
         returnToMainControl();
     });
 
-    // Load Button: Firebase on → Firebaseから読み込み / off → ファイルから読み込み
+    // ファイルピッカーを開いてKMZ/KML/GeoJSONを読み込む共通処理
+    function openFileImport() {
+        let fileInput = document.getElementById('kmzFileInput');
+        if (!fileInput) {
+            fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.id = 'kmzFileInput';
+            fileInput.accept = '.kmz,.kml,.geojson,.json,.zip,application/vnd.google-earth.kmz,application/vnd.google-earth.kml+xml,application/zip,application/json,application/geo+json,application/octet-stream';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+
+            fileInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    setUiBusy(true);
+                    try {
+                        const { importKmz, importGeoJson } = await import('./kmz-handler.js');
+                        let result;
+
+                        if (file.name.endsWith('.kmz') || file.name.endsWith('.kml') || file.name.endsWith('.kmz.zip') || file.name.endsWith('.zip')) {
+                            result = await importKmz(file);
+                        } else if (file.name.endsWith('.geojson') || file.name.endsWith('.json')) {
+                            result = await importGeoJson(file);
+                        } else {
+                            alert('Unsupported file type');
+                            return;
+                        }
+
+                        if (result.type === 'RouteLogger') {
+                            if (confirm('現在の記録データをクリアして、このファイルを読み込みますか？')) {
+                                updateStatus('データをリセット中...');
+                                await clearRouteLogData();
+                                clearMapData({ keepExternal: true });
+                                updateStatus('トラックデータを復元中...');
+                                for (const track of result.tracks) {
+                                    await restoreTrack(track);
+                                }
+                                updateStatus('写真データを復元中...');
+                                for (const photo of result.photos) {
+                                    delete photo.id;
+                                    await savePhoto(photo);
+                                }
+                                alert(`読み込み完了: ${file.name}\nページをリロードします。`);
+                                location.reload();
+                            }
+                        } else {
+                            displayExternalGeoJSON(result.geojson);
+                            updateStatus('外部データを表示しました');
+                            alert(`Loaded successfully: ${file.name}`);
+                        }
+                    } catch (err) {
+                        console.error('Error importing file:', err);
+                        alert('Failed to import file: ' + err.message);
+                    } finally {
+                        setUiBusy(false);
+                        fileInput.value = '';
+                    }
+                }
+            });
+        }
+        fileInput.click();
+    }
+
+    // Load Button: Firebase on → 選択ダイアログ / off → ファイルから読み込み
     const dataReloadBtn = document.getElementById('dataReloadBtn');
     if (dataReloadBtn) {
         dataReloadBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             returnToMainControl();
             if (state.isFirebaseEnabled) {
-                const authed = await ensureFirebaseAuth();
-                if (!authed) return;
-                await reloadFromFirebase();
-            } else {
-                let fileInput = document.getElementById('kmzFileInput');
-                if (!fileInput) {
-                    fileInput = document.createElement('input');
-                    fileInput.type = 'file';
-                    fileInput.id = 'kmzFileInput';
-                    fileInput.accept = '.kmz,.kml,.geojson,.json,.zip,application/vnd.google-earth.kmz,application/vnd.google-earth.kml+xml,application/zip,application/json,application/geo+json';
-                    fileInput.style.display = 'none';
-                    document.body.appendChild(fileInput);
-
-                    fileInput.addEventListener('change', async (event) => {
-                        const file = event.target.files[0];
-                        if (file) {
-                            setUiBusy(true);
-                            try {
-                                const { importKmz, importGeoJson } = await import('./kmz-handler.js');
-                                let result;
-
-                                if (file.name.endsWith('.kmz') || file.name.endsWith('.kml') || file.name.endsWith('.kmz.zip') || file.name.endsWith('.zip')) {
-                                    result = await importKmz(file);
-                                } else if (file.name.endsWith('.geojson') || file.name.endsWith('.json')) {
-                                    result = await importGeoJson(file);
-                                } else {
-                                    alert('Unsupported file type');
-                                    return;
-                                }
-
-                                if (result.type === 'RouteLogger') {
-                                    if (confirm('現在の記録データをクリアして、このファイルを読み込みますか？')) {
-                                        updateStatus('データをリセット中...');
-                                        await clearRouteLogData();
-                                        clearMapData({ keepExternal: true });
-                                        updateStatus('トラックデータを復元中...');
-                                        for (const track of result.tracks) {
-                                            await restoreTrack(track);
-                                        }
-                                        updateStatus('写真データを復元中...');
-                                        for (const photo of result.photos) {
-                                            delete photo.id;
-                                            await savePhoto(photo);
-                                        }
-                                        alert(`読み込み完了: ${file.name}\nページをリロードします。`);
-                                        location.reload();
-                                    }
-                                } else {
-                                    displayExternalGeoJSON(result.geojson);
-                                    updateStatus('外部データを表示しました');
-                                    alert(`Loaded successfully: ${file.name}`);
-                                }
-                            } catch (err) {
-                                console.error('Error importing file:', err);
-                                alert('Failed to import file: ' + err.message);
-                            } finally {
-                                setUiBusy(false);
-                                fileInput.value = '';
-                            }
-                        }
-                    });
+                const fromFile = confirm('KMZファイルから読み込む場合は「OK」\nFirebaseから読み込む場合は「キャンセル」を押してください');
+                if (fromFile) {
+                    openFileImport();
+                } else {
+                    const authed = await ensureFirebaseAuth();
+                    if (!authed) return;
+                    await reloadFromFirebase();
                 }
-                fileInput.click();
+            } else {
+                openFileImport();
             }
         });
     }
