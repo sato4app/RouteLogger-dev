@@ -1,7 +1,7 @@
 // RouteLogger - Settings & Clock UI
 
 import * as state from './state.js';
-import { DEFAULT_PHOTO_RESOLUTION_LEVEL, DEFAULT_PHOTO_QUALITY, DEFAULT_THUMBNAIL_SIZE } from './config.js';
+import { DEFAULT_PHOTO_RESOLUTION_LEVEL, DEFAULT_PHOTO_QUALITY, DEFAULT_THUMBNAIL_SIZE, SETTINGS_PASSWORD } from './config.js';
 import { toggleVisibility } from './ui-common.js';
 import { checkAndUpdateUserStatus } from './ui-auth.js';
 
@@ -257,7 +257,17 @@ export function initSettings() {
     const imageSettingsDefaultBtn = document.getElementById('imageSettingsDefaultBtn');
     const imageSettingsCancelBtn  = document.getElementById('imageSettingsCancelBtn');
 
-    if (imageSettingsBtn)     imageSettingsBtn.addEventListener('click', openImageSettingsPanel);
+    if (imageSettingsBtn) {
+        imageSettingsBtn.addEventListener('click', () => {
+            const input = window.prompt('設定用パスワードを入力してください');
+            if (input === null) return; // キャンセル
+            if (input !== SETTINGS_PASSWORD) {
+                alert('パスワードが違います');
+                return;
+            }
+            openImageSettingsPanel();
+        });
+    }
     if (imageSettingsSaveBtn) imageSettingsSaveBtn.addEventListener('click', () => { applyImageSettings(); closeImageSettingsPanel(); });
     if (imageSettingsDefaultBtn) imageSettingsDefaultBtn.addEventListener('click', resetToDefaults);
     if (imageSettingsCancelBtn)  imageSettingsCancelBtn.addEventListener('click', closeImageSettingsPanel);
