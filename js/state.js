@@ -90,6 +90,14 @@ export function getPhotoSize() {
     return sizes[photoResolutionLevel] || sizes[0];
 }
 
+// JPEG品質: 60, 70, 80 (整数値、使用時に /100)
+export let photoQuality = 60;
+export function setPhotoQuality(value) { photoQuality = value; }
+
+// サムネールサイズ: 80～320 (px、正方形)
+export let thumbnailSize = 320;
+export function setThumbnailSize(value) { thumbnailSize = value; }
+
 // 配列操作
 export function addPhotoMarker(marker) { photoMarkers.push(marker); }
 export function clearPhotoMarkers() { photoMarkers = []; }

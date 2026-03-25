@@ -81,9 +81,17 @@ export function showSettingsDialog() {
     }
 
     const photoResolutionSlider = document.getElementById('photoResolutionSlider');
-    if (photoResolutionSlider) {
-        photoResolutionSlider.value = state.photoResolutionLevel;
-    }
+    if (photoResolutionSlider) photoResolutionSlider.value = state.photoResolutionLevel;
+
+    const photoQualitySlider = document.getElementById('photoQualitySlider');
+    const photoQualityInput  = document.getElementById('photoQualityInput');
+    if (photoQualitySlider) photoQualitySlider.value = state.photoQuality;
+    if (photoQualityInput)  photoQualityInput.value  = state.photoQuality;
+
+    const thumbnailSizeSlider = document.getElementById('thumbnailSizeSlider');
+    const thumbnailSizeInput  = document.getElementById('thumbnailSizeInput');
+    if (thumbnailSizeSlider) thumbnailSizeSlider.value = state.thumbnailSize;
+    if (thumbnailSizeInput)  thumbnailSizeInput.value  = state.thumbnailSize;
 
     toggleVisibility('settingsDialog', true);
 }
@@ -170,6 +178,36 @@ export function initSettings() {
     if (savedMinooEmergency !== null) {
         state.setIsMinooEmergencyEnabled(savedMinooEmergency === 'true');
     }
+
+    // JPEG画像品質スライダー
+    const photoQualitySlider = document.getElementById('photoQualitySlider');
+    const photoQualityInput  = document.getElementById('photoQualityInput');
+    function syncQuality(value) {
+        const v = Math.min(80, Math.max(60, Math.round(value / 10) * 10));
+        state.setPhotoQuality(v);
+        localStorage.setItem('routeLogger_photoQuality', v);
+        if (photoQualitySlider) photoQualitySlider.value = v;
+        if (photoQualityInput)  photoQualityInput.value  = v;
+    }
+    if (photoQualitySlider) photoQualitySlider.addEventListener('input', (e) => syncQuality(parseInt(e.target.value)));
+    if (photoQualityInput)  photoQualityInput.addEventListener('change', (e) => syncQuality(parseInt(e.target.value)));
+    const savedQuality = localStorage.getItem('routeLogger_photoQuality');
+    if (savedQuality !== null) syncQuality(parseInt(savedQuality));
+
+    // サムネールサイズスライダー
+    const thumbnailSizeSlider = document.getElementById('thumbnailSizeSlider');
+    const thumbnailSizeInput  = document.getElementById('thumbnailSizeInput');
+    function syncThumbnail(value) {
+        const v = Math.min(320, Math.max(80, Math.round(value / 40) * 40));
+        state.setThumbnailSize(v);
+        localStorage.setItem('routeLogger_thumbnailSize', v);
+        if (thumbnailSizeSlider) thumbnailSizeSlider.value = v;
+        if (thumbnailSizeInput)  thumbnailSizeInput.value  = v;
+    }
+    if (thumbnailSizeSlider) thumbnailSizeSlider.addEventListener('input', (e) => syncThumbnail(parseInt(e.target.value)));
+    if (thumbnailSizeInput)  thumbnailSizeInput.addEventListener('change', (e) => syncThumbnail(parseInt(e.target.value)));
+    const savedThumbnail = localStorage.getItem('routeLogger_thumbnailSize');
+    if (savedThumbnail !== null) syncThumbnail(parseInt(savedThumbnail));
 
     // 写真解像度スライダー
     const resolutionLabels = ['720×1280px（高）', '360×640px（中）', '180×320px（低）'];

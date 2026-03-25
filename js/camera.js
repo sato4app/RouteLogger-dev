@@ -65,7 +65,7 @@ function stopCompassWatch() {
     _capturedCompassHeading = null;
 }
 
-import { PHOTO_QUALITY } from './config.js';
+import { state.photoQuality / 100 as DEFAULT_state.photoQuality / 100 } from './config.js';
 import * as state from './state.js';
 import { savePhoto, updatePhoto, getPhoto, deletePhoto } from './db.js';
 import { addPhotoMarkerToMap, removePhotoMarker } from './map.js';
@@ -144,7 +144,7 @@ export async function drawArrowStamp(base64Image, direction) {
 
             ctx.restore();
 
-            const stampedImage = canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
+            const stampedImage = canvas.toDataURL('image/jpeg', state.photoQuality / 100);
             resolve(stampedImage);
         };
 
@@ -310,7 +310,7 @@ export async function capturePhoto() {
     const ctx = capturedCanvas.getContext('2d');
     ctx.drawImage(cameraPreview, cropX, cropY, cropWidth, cropHeight, 0, 0, PHOTO_WIDTH, PHOTO_HEIGHT);
 
-    state.setCapturedPhotoData(capturedCanvas.toDataURL('image/jpeg', PHOTO_QUALITY));
+    state.setCapturedPhotoData(capturedCanvas.toDataURL('image/jpeg', state.photoQuality / 100));
 
     // 撮影時の位置情報を保持
     const location = state.currentMarker ? state.currentMarker.getLatLng() : null;

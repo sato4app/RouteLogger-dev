@@ -326,6 +326,32 @@
                 </div>
                 <div class="setting-item">
                     <div class="setting-label">
+                        <div class="setting-title">JPEG画像品質</div>
+                        <div class="setting-desc">撮影写真の圧縮品質</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <input type="number" id="photoQualityInput" min="60" max="80" step="10" value="60"
+                            style="width:42px; text-align:center; font-size:0.9em;">
+                        <span style="font-size:0.85em; color:#888;">%</span>
+                        <input type="range" id="photoQualitySlider" min="60" max="80" step="10" value="60"
+                            style="width:70px; accent-color:#4a90d9;">
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <div class="setting-title">サムネール画像サイズ</div>
+                        <div class="setting-desc">KMZに埋め込む正方形サムネール</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <input type="number" id="thumbnailSizeInput" min="80" max="320" step="40" value="320"
+                            style="width:42px; text-align:center; font-size:0.9em;">
+                        <span style="font-size:0.85em; color:#888;">px</span>
+                        <input type="range" id="thumbnailSizeSlider" min="80" max="320" step="40" value="320"
+                            style="width:70px; accent-color:#4a90d9;">
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
                         <div class="setting-title">進行方向ボタンを表示</div>
                         <div class="setting-desc">写真撮影後にForward/Backwardボタンを表示</div>
                     </div>

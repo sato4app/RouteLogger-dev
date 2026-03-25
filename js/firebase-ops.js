@@ -95,7 +95,7 @@ export async function saveToFirebase(providedName) {
             try {
                 const generateKmz = firebase.app().functions('asia-northeast1')
                     .httpsCallable('generateKmzAndSendEmail');
-                const result = await generateKmz({ projectName });
+                const result = await generateKmz({ projectName, thumbnailSize: state.thumbnailSize });
                 updateStatus(`KMZ送信完了 → ${result.data.sentTo}`);
             } catch (kmzError) {
                 console.warn('KMZ生成・メール送信に失敗しました:', kmzError.message);

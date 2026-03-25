@@ -29,10 +29,10 @@ function downloadBuffer(url) {
     });
 }
 
-/** 画像を長辺 320px にリサイズして JPEG バッファを返す */
-async function resizeTo320(buffer) {
+/** 画像を正方形にクロップしてリサイズして JPEG バッファを返す */
+async function resizeToSquare(buffer, size = 320) {
     return sharp(buffer)
-        .resize({ width: 320, height: 320, fit: 'inside' })
+        .resize({ width: size, height: size, fit: 'cover' })
         .jpeg({ quality: 80 })
         .toBuffer();
 }
@@ -146,7 +146,7 @@ exports.generateKmzAndSendEmail = functions
             throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
         }
 
-        const { projectName } = data;
+        const { projectName, thumbnailSize = 320 } = data;
         if (!projectName) {
             throw new functions.https.HttpsError('invalid-argument', 'projectName が必要です');
         }
@@ -186,7 +186,7 @@ exports.generateKmzAndSendEmail = functions
             const filename = `thumb_${String(i + 1).padStart(3, '0')}.jpg`;
             try {
                 const buffer = await downloadBuffer(photo.url);
-                const thumbnail = await resizeTo320(buffer);
+                const thumbnail = await resizeToSquare(buffer, thumbnailSize);
                 imagesFolder.file(filename, thumbnail);
                 photoFilenames[i] = filename;
             } catch (e) {
@@ -280,6 +280,7 @@ exports.generateKmzToStorage = functions
         }
 
         const bucket = admin.storage().bucket();
+        const thumbnailSize = data.thumbnailSize || 320;
 
         async function processOne(projectName) {
             const docSnap = await admin.firestore().collection('tracks').doc(projectName).get();
@@ -300,7 +301,7 @@ exports.generateKmzToStorage = functions
                 const filename = `thumb_${String(i + 1).padStart(3, '0')}.jpg`;
                 try {
                     const buffer = await downloadBuffer(photo.url);
-                    const thumbnail = await resizeTo320(buffer);
+                    const thumbnail = await resizeToSquare(buffer, thumbnailSize);
                     imagesFolder.file(filename, thumbnail);
                     photoFilenames[i] = filename;
                 } catch (e) {
