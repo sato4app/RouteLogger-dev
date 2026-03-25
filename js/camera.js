@@ -65,7 +65,6 @@ function stopCompassWatch() {
     _capturedCompassHeading = null;
 }
 
-import { state.photoQuality / 100 as DEFAULT_state.photoQuality / 100 } from './config.js';
 import * as state from './state.js';
 import { savePhoto, updatePhoto, getPhoto, deletePhoto } from './db.js';
 import { addPhotoMarkerToMap, removePhotoMarker } from './map.js';
