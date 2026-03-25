@@ -16,12 +16,18 @@ export async function checkAndUpdateUserStatus() {
     const statusEl = document.getElementById('userRegistrationStatus');
 
     if (!username) {
-        if (display) display.textContent = 'ユーザー名（半角英数字のみ）';
+        if (display) {
+            display.textContent = 'ユーザー名（半角英数字のみ）';
+            display.style.color = '#aaa';
+        }
         if (statusEl) statusEl.textContent = '';
         return;
     }
 
-    if (display) display.textContent = `@${username}`;
+    if (display) {
+        display.textContent = `@${username}`;
+        display.style.color = '';
+    }
     if (statusEl) statusEl.textContent = '';
 
     try {
