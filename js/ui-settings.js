@@ -189,9 +189,10 @@ export function initSettings() {
     }
     if (photoQualityInput) {
         photoQualityInput.addEventListener('change', (e) => {
-            const v = Math.min(80, Math.max(60, Math.round(parseInt(e.target.value) / 10) * 10));
-            photoQualityInput.value = v;
-            if (photoQualitySlider) photoQualitySlider.value = v;
+            const v = parseInt(e.target.value);
+            if (!isNaN(v)) {
+                if (photoQualitySlider) photoQualitySlider.value = Math.min(80, Math.max(60, v));
+            }
         });
     }
     if (thumbnailSizeSlider) {
@@ -201,9 +202,10 @@ export function initSettings() {
     }
     if (thumbnailSizeInput) {
         thumbnailSizeInput.addEventListener('change', (e) => {
-            const v = Math.min(320, Math.max(80, Math.round(parseInt(e.target.value) / 40) * 40));
-            thumbnailSizeInput.value = v;
-            if (thumbnailSizeSlider) thumbnailSizeSlider.value = v;
+            const v = parseInt(e.target.value);
+            if (!isNaN(v)) {
+                if (thumbnailSizeSlider) thumbnailSizeSlider.value = Math.min(320, Math.max(80, v));
+            }
         });
     }
 
@@ -229,9 +231,9 @@ export function initSettings() {
     function applyImageSettings() {
         const level = parseInt(photoResolutionSlider?.value ?? state.photoResolutionLevel);
         const rawQuality = parseInt(photoQualityInput?.value ?? photoQualitySlider?.value ?? state.photoQuality);
-        const quality = Math.min(80, Math.max(60, Math.round(rawQuality / 10) * 10));
+        const quality = isNaN(rawQuality) ? state.photoQuality : rawQuality;
         const rawThumb = parseInt(thumbnailSizeInput?.value ?? thumbnailSizeSlider?.value ?? state.thumbnailSize);
-        const thumb = Math.min(320, Math.max(80, Math.round(rawThumb / 40) * 40));
+        const thumb = isNaN(rawThumb) ? state.thumbnailSize : rawThumb;
         state.setPhotoResolutionLevel(level);
         state.setPhotoQuality(quality);
         state.setThumbnailSize(thumb);
