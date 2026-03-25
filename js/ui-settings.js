@@ -225,11 +225,13 @@ export function initSettings() {
         if (section) section.classList.add('hidden');
     }
 
-    // スライダー値をstateとlocalStorageに確定保存
+    // スライダー・テキスト入力値をstateとlocalStorageに確定保存
     function applyImageSettings() {
         const level = parseInt(photoResolutionSlider?.value ?? state.photoResolutionLevel);
-        const quality = parseInt(photoQualitySlider?.value ?? state.photoQuality);
-        const thumb = parseInt(thumbnailSizeSlider?.value ?? state.thumbnailSize);
+        const rawQuality = parseInt(photoQualityInput?.value ?? photoQualitySlider?.value ?? state.photoQuality);
+        const quality = Math.min(80, Math.max(60, Math.round(rawQuality / 10) * 10));
+        const rawThumb = parseInt(thumbnailSizeInput?.value ?? thumbnailSizeSlider?.value ?? state.thumbnailSize);
+        const thumb = Math.min(320, Math.max(80, Math.round(rawThumb / 40) * 40));
         state.setPhotoResolutionLevel(level);
         state.setPhotoQuality(quality);
         state.setThumbnailSize(thumb);
