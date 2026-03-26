@@ -8,7 +8,8 @@ import { takePhoto, closeCameraDialog, capturePhoto, savePhotoWithDirection, han
 import { saveToFirebase, reloadFromFirebase } from './firebase-ops.js';
 import { updateStatus, showPhotoList, closePhotoList, closePhotoViewer, showDataSize, closeStatsDialog, closeDocumentListDialog, showPhotoFromMarker, initPhotoViewerControls, initClock, initSettings, showSettingsDialog, showDocNameDialog, setUiBusy } from './ui.js';
 import { getAllExternalData, getAllTracks, getAllPhotos, clearIndexedDBSilent, clearRouteLogData, restoreTrack, savePhoto } from './db.js';
-import { displayExternalGeoJSON, displayAllTracks, clearMapData, displayEmergencyPoints, clearEmergencyPoints } from './map.js';
+import { displayExternalGeoJSON, displayAllTracks, clearMapData, displayEmergencyPoints, clearEmergencyPoints, addStartMarker, addEndMarker } from './map.js';
+import { calculateHeading } from './utils.js';
 import { exportToKmz } from './kmz-handler.js';
 import { initAuthUI, checkAndUpdateUserStatus } from './ui-auth.js';
 import { signInAnonymously } from './auth.js';
@@ -61,6 +62,20 @@ async function initApp() {
         const allTracks = await getAllTracks();
         if (allTracks && allTracks.length > 0) {
             displayAllTracks(allTracks, loadedColor);
+            // ロード済みデータの場合は開始/終了マーカーも作成
+            if (loadedColor) {
+                const allPoints = [];
+                allTracks.forEach(track => {
+                    if (track.points) track.points.forEach(p => allPoints.push(p));
+                });
+                if (allPoints.length > 0) {
+                    const startPt = allPoints[0];
+                    const endPt = allPoints[allPoints.length - 1];
+                    addStartMarker(startPt.lat, startPt.lng, loadedColor);
+                    const heading = calculateHeading(endPt, allPoints);
+                    addEndMarker(endPt.lat, endPt.lng, heading, loadedColor);
+                }
+            }
         }
     } catch (e) {
         console.error('トラックデータ表示エラー:', e);
