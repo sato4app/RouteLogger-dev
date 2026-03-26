@@ -85,23 +85,22 @@ export async function saveToFirebase(providedName) {
         await projectRef.set(projectData);
 
         const trackStats = calculateTrackStats(allTracks);
-        updateStatus('Firebase保存完了');
-        alert(`Firebaseに保存しました\nルート名: ${projectName}\n記録点数: ${trackStats.totalPoints}件\n写真: ${allPhotos.length}件`);
 
-        // KMZ生成・メール送信をCloud Functionで非同期実行
+        // KMZ生成・メール送信をCloud Functionで非同期実行（alertを待たずに開始）
         const username = localStorage.getItem('routeLogger_username');
         if (username) {
             updateStatus('KMZ生成・メール送信中...');
-            try {
-                const generateKmz = firebase.app().functions('asia-northeast1')
-                    .httpsCallable('generateKmzAndSendEmail');
-                const result = await generateKmz({ projectName, thumbnailSize: state.thumbnailSize });
-                updateStatus(`KMZ送信完了 → ${result.data.sentTo}`);
-            } catch (kmzError) {
-                console.warn('KMZ生成・メール送信に失敗しました:', kmzError.message);
-                updateStatus(`KMZ送信失敗: ${kmzError.message}`);
-            }
+            firebase.app().functions('asia-northeast1')
+                .httpsCallable('generateKmzAndSendEmail')({ projectName, thumbnailSize: state.thumbnailSize })
+                .then(result => updateStatus(`KMZ送信完了 → ${result.data.sentTo}`))
+                .catch(kmzError => {
+                    console.warn('KMZ生成・メール送信に失敗しました:', kmzError.message);
+                    updateStatus(`KMZ送信失敗: ${kmzError.message}`);
+                });
         }
+
+        updateStatus('Firebase保存完了');
+        alert(`Firebaseに保存しました\nルート名: ${projectName}\n記録点数: ${trackStats.totalPoints}件\n写真: ${allPhotos.length}件`);
 
     } catch (error) {
         console.error('Firebase保存エラー:', error);
@@ -192,7 +191,7 @@ export async function loadDocument(doc, loadPhotos = true) {
             await restorePhotos(data.photos, state.db);
         }
 
-        await displayPhotoMarkers(showPhotoFromMarker, '#FF00FF');
+        await displayPhotoMarkers(showPhotoFromMarker, '#00BFFF');
 
         // Saveボタンを無効化
         document.getElementById('dataSaveBtn').disabled = true;
@@ -368,12 +367,12 @@ async function restoreTracks(tracks, db) {
     if (allPoints.length > 0) {
         // パス描画（マゼンタ）
         state.trackingPath.setLatLngs(allPoints);
-        state.trackingPath.setStyle({ color: '#FF00FF' });
+        state.trackingPath.setStyle({ color: '#00BFFF' });
         state.map.setView(allPoints[0], 15);
 
         // 開始地点マーカー（マゼンタ）
         const startPoint = allPoints[0];
-        addStartMarker(startPoint[0], startPoint[1], '#FF00FF');
+        addStartMarker(startPoint[0], startPoint[1], '#00BFFF');
 
         // 終了地点（現在地点）マーカー（マゼンタ）
         const endPoint = allPoints[allPoints.length - 1];
@@ -384,7 +383,7 @@ async function restoreTracks(tracks, db) {
         const heading = calculateHeading(endPointObj, historyPointsObj);
 
         removeCurrentMarker();
-        addEndMarker(endPoint[0], endPoint[1], heading, '#FF00FF');
+        addEndMarker(endPoint[0], endPoint[1], heading, '#00BFFF');
     }
 }
 
