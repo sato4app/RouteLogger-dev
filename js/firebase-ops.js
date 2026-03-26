@@ -311,7 +311,7 @@ async function uploadPhotosToStorage(storage, projectName, photos) {
                     url: downloadURL,
                     storagePath: photoPath,
                     timestamp: photo.timestamp,
-                    direction: photo.direction || null,
+                    direction: photo.direction !== '' ? (photo.direction ?? null) : null,
                     facing: photo.facing || null,
                     compass: (photo.compassDirection != null || photo.compassHeading != null)
                         ? `${photo.compassDirection ?? ''}${photo.compassHeading != null ? `（${photo.compassHeading}°）` : ''}`
@@ -418,7 +418,7 @@ async function restorePhotos(photosData, db) {
             const photoRecord = {
                 data: base64,
                 timestamp: photoData.timestamp,
-                direction: photoData.direction || null,
+                direction: photoData.direction ?? null,
                 facing: photoData.facing || null,
                 location: photoData.location,
                 text: photoData.text || null
