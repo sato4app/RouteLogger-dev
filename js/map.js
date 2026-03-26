@@ -3,6 +3,7 @@
 import { DEFAULT_POSITION, GSI_TILE_URL, GSI_ATTRIBUTION, MAP_MAX_NATIVE_ZOOM, MAP_MAX_ZOOM, MAP_MIN_ZOOM } from './config.js';
 import * as state from './state.js';
 import { getLastPosition, getAllPhotos, getExternalPhoto } from './db.js';
+import { calculateHeading } from './utils.js';
 
 /** ポップアップ内の外部リンク画像をlightboxで表示 */
 window._showPhotoLightbox = function(url) {
@@ -430,6 +431,34 @@ export function displayExternalGeoJSON(geoJson) {
         }).addTo(state.map);
 
         state.addExternalLayer(layer);
+
+        // トラックの開始・終了マーカーを追加
+        const trackColor = '#00BFFF';
+        let allTrackPoints = [];
+        geoJson.features.forEach(feature => {
+            if (!feature.geometry) return;
+            if (feature.geometry.type === 'LineString') {
+                allTrackPoints = allTrackPoints.concat(feature.geometry.coordinates);
+            } else if (feature.geometry.type === 'MultiLineString') {
+                feature.geometry.coordinates.forEach(line => allTrackPoints = allTrackPoints.concat(line));
+            }
+        });
+        if (allTrackPoints.length > 0) {
+            const startCoord = allTrackPoints[0];
+            const endCoord = allTrackPoints[allTrackPoints.length - 1];
+
+            const startMarker = L.marker([startCoord[1], startCoord[0]], {
+                icon: createSquareIcon(trackColor), title: 'Start Point', zIndexOffset: 1000
+            }).addTo(state.map);
+            state.addExternalLayer(startMarker);
+
+            const historyPoints = allTrackPoints.map(p => ({ lat: p[1], lng: p[0] }));
+            const heading = calculateHeading({ lat: endCoord[1], lng: endCoord[0] }, historyPoints);
+            const endMarker = L.marker([endCoord[1], endCoord[0]], {
+                icon: createArrowIcon(heading, trackColor), title: 'End Point', zIndexOffset: 1000
+            }).addTo(state.map);
+            state.addExternalLayer(endMarker);
+        }
 
         // データの範囲に合わせてズーム
         const bounds = layer.getBounds();
