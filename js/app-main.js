@@ -340,7 +340,7 @@ function setupEventListeners() {
                         } else if (file.name.endsWith('.geojson') || file.name.endsWith('.json')) {
                             result = await importGeoJson(file);
                         } else {
-                            alert('Unsupported file type');
+                            alert('未対応のファイル形式です');
                             return;
                         }
 
@@ -365,11 +365,11 @@ function setupEventListeners() {
                         } else {
                             displayExternalGeoJSON(result.geojson);
                             updateStatus('外部データを表示しました');
-                            alert(`Loaded successfully: ${file.name}`);
+                            alert(`読み込み完了: ${file.name}`);
                         }
                     } catch (err) {
                         console.error('Error importing file:', err);
-                        alert('Failed to import file: ' + err.message);
+                        alert('ファイルの読み込みに失敗しました: ' + err.message);
                     } finally {
                         setUiBusy(false);
                         fileInput.value = '';
@@ -414,7 +414,7 @@ function setupEventListeners() {
                 if (docName) {
                     setUiBusy(true);
                     try {
-                        updateStatus(`Save to cloud as "${docName}"...`);
+                        updateStatus(`クラウドに保存中: "${docName}"...`);
                         await saveToFirebase(docName);
                     } finally {
                         setUiBusy(false);
@@ -427,7 +427,7 @@ function setupEventListeners() {
                     try {
                         const tracks = await getAllTracks();
                         const photos = await getAllPhotos();
-                        updateStatus(`Save to file as "${docName}.kmz"...`);
+                        updateStatus(`ファイルに保存中: "${docName}.kmz"...`);
                         await exportToKmz(tracks, photos, docName);
                     } catch (e) {
                         console.error('エクスポートエラー:', e);

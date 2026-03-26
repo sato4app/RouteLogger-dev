@@ -191,7 +191,7 @@ export async function takePhoto() {
         state.setCameraStream(stream);
         cameraPreview.srcObject = stream;
 
-        startCompassWatch();
+        await startCompassWatch();
         updateStatus('カメラ準備完了');
     } catch (error) {
         console.error('カメラエラー:', error);
