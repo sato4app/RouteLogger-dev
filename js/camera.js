@@ -105,10 +105,39 @@ export async function drawArrowStamp(base64Image, direction) {
             const centerX = img.width / 2;
             const bottomY = img.height - arrowSize * 1.5;
 
-            // 白背景の円
+            // 角度テキストの準備
+            let degValue = parseFloat(direction);
+            if (isNaN(degValue)) {
+                degValue = direction === 'left' ? -60 : direction === 'right' ? 60 : 0;
+            }
+            const textStr = `${degValue}°`;
+
+            ctx.font = `bold ${Math.floor(arrowSize * 0.45)}px sans-serif`;
+            const textWidth = ctx.measureText(textStr).width;
+
+            // カプセルのサイズ計算
+            const paddingX = arrowSize * 0.4;
+            const paddingY = arrowSize * 0.35;
+            const gap = arrowSize * 0.15;
+            const boxHeight = arrowSize * 1.1;
+            const boxWidth = arrowSize + gap + textWidth + paddingX * 2;
+            const boxX = centerX - boxWidth / 2;
+            const boxY = bottomY - boxHeight / 2;
+            const radius = boxHeight / 2;
+
+            // 白背景のカプセル
             ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
             ctx.beginPath();
-            ctx.arc(centerX, bottomY, arrowSize * 0.7, 0, Math.PI * 2);
+            ctx.moveTo(boxX + radius, boxY);
+            ctx.lineTo(boxX + boxWidth - radius, boxY);
+            ctx.quadraticCurveTo(boxX + boxWidth, boxY, boxX + boxWidth, boxY + radius);
+            ctx.lineTo(boxX + boxWidth, boxY + boxHeight - radius);
+            ctx.quadraticCurveTo(boxX + boxWidth, boxY + boxHeight, boxX + boxWidth - radius, boxY + boxHeight);
+            ctx.lineTo(boxX + radius, boxY + boxHeight);
+            ctx.quadraticCurveTo(boxX, boxY + boxHeight, boxX, boxY + boxHeight - radius);
+            ctx.lineTo(boxX, boxY + radius);
+            ctx.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
+            ctx.closePath();
             ctx.fill();
 
             // 縁取り
@@ -116,9 +145,17 @@ export async function drawArrowStamp(base64Image, direction) {
             ctx.lineWidth = 3;
             ctx.stroke();
 
-            // 矢印を描画
+            // テキスト描画 (右側)
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            const textX = boxX + paddingX + arrowSize + gap;
+            ctx.fillText(textStr, textX, bottomY + (arrowSize * 0.05)); // 少し調整
+
+            // 矢印を描画 (左側)
             ctx.save();
-            ctx.translate(centerX, bottomY);
+            const arrowCenterX = boxX + paddingX + arrowSize / 2;
+            ctx.translate(arrowCenterX, bottomY);
 
             ctx.rotate(directionToRad(direction));
 
