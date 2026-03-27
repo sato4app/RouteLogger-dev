@@ -115,20 +115,46 @@ export async function showPhotoList() {
                 const item = document.createElement('div');
                 item.className = 'photo-item';
 
+                // 正方形サムネール領域
+                const thumbDiv = document.createElement('div');
+                thumbDiv.className = 'photo-thumb';
+
                 const img = document.createElement('img');
                 img.src = photo.data;
                 img.alt = '写真';
+                thumbDiv.appendChild(img);
 
-                item.appendChild(img);
-
-                if (photo.direction !== null && photo.direction !== undefined && photo.direction !== '') {
+                const hasDirection = photo.direction !== null && photo.direction !== undefined && photo.direction !== '';
+                if (hasDirection) {
                     const deg = typeof photo.direction === 'number' ? photo.direction :
                                 photo.direction === 'left' ? -60 :
                                 photo.direction === 'right' ? 60 : 0;
                     const badge = document.createElement('div');
                     badge.className = 'photo-direction-badge';
                     badge.innerHTML = `<svg viewBox="0 0 14 14" width="14" height="14" style="transform:rotate(${deg}deg)"><path d="M7 2 L11 11 L7 8.5 L3 11 Z" fill="white"/></svg>`;
-                    item.appendChild(badge);
+                    thumbDiv.appendChild(badge);
+                }
+
+                item.appendChild(thumbDiv);
+
+                // サムネール下のメタ情報
+                if (photo.facing || hasDirection) {
+                    const meta = document.createElement('div');
+                    meta.className = 'photo-meta';
+                    if (photo.facing) {
+                        const facingEl = document.createElement('span');
+                        facingEl.textContent = `進行方向: ${photo.facing}`;
+                        meta.appendChild(facingEl);
+                    }
+                    if (hasDirection) {
+                        const deg = typeof photo.direction === 'number' ? photo.direction :
+                                    photo.direction === 'left' ? -60 :
+                                    photo.direction === 'right' ? 60 : 0;
+                        const dirEl = document.createElement('span');
+                        dirEl.textContent = `進行角度: ${deg}°`;
+                        meta.appendChild(dirEl);
+                    }
+                    item.appendChild(meta);
                 }
 
                 item.addEventListener('click', () => showPhotoViewer(photo, photos, index));
