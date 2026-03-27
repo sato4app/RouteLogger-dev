@@ -141,20 +141,55 @@ export async function showPhotoList() {
                 const meta = document.createElement('div');
                 meta.className = 'photo-meta';
 
+                // Timestamp
+                let tsText = 'null';
+                if (photo.timestamp != null) {
+                    const d = new Date(photo.timestamp);
+                    const yyyy = d.getFullYear();
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const hh = String(d.getHours()).padStart(2, '0');
+                    const min = String(d.getMinutes()).padStart(2, '0');
+                    tsText = `${yyyy}/${mm}/${dd} ${hh}:${min}`;
+                }
+                const tsEl = document.createElement('span');
+                tsEl.textContent = `Timestamp: ${tsText}`;
+                meta.appendChild(tsEl);
+
+                // Facing
                 const facingEl = document.createElement('span');
-                facingEl.textContent = `進行方向: ${photo.facing ?? 'null'}`;
+                facingEl.textContent = `Facing: ${photo.facing ?? 'null'}`;
                 meta.appendChild(facingEl);
 
+                // Direction
                 const dirEl = document.createElement('span');
                 if (hasDirection) {
                     const deg = typeof photo.direction === 'number' ? photo.direction :
                                 photo.direction === 'left' ? -60 :
                                 photo.direction === 'right' ? 60 : 0;
-                    dirEl.textContent = `進行角度: ${deg}°`;
+                    dirEl.textContent = `Direction: ${deg}°`;
                 } else {
-                    dirEl.textContent = '進行角度: null';
+                    dirEl.textContent = 'Direction: null';
                 }
                 meta.appendChild(dirEl);
+
+                // Compass
+                const compassEl = document.createElement('span');
+                compassEl.textContent = `Compass: ${photo.compassHeading != null ? photo.compassHeading + '°' : 'null'}`;
+                meta.appendChild(compassEl);
+
+                // Memo
+                const memoEl = document.createElement('span');
+                memoEl.textContent = `Memo: ${photo.text ?? 'null'}`;
+                meta.appendChild(memoEl);
+
+                // Size（画像ロード後に更新）
+                const sizeEl = document.createElement('span');
+                sizeEl.textContent = 'Size: -';
+                img.addEventListener('load', () => {
+                    sizeEl.textContent = `Size: ${img.naturalWidth}x${img.naturalHeight}px`;
+                });
+                meta.appendChild(sizeEl);
 
                 item.appendChild(meta);
 

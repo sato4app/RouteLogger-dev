@@ -316,6 +316,7 @@ async function uploadPhotosToStorage(storage, projectName, photos) {
                     compass: (photo.compassDirection != null || photo.compassHeading != null)
                         ? `${photo.compassDirection ?? ''}${photo.compassHeading != null ? `（${photo.compassHeading}°）` : ''}`
                         : null,
+                    compassHeading: photo.compassHeading ?? null,
                     location: formatPositionData(photo.location),
                     text: photo.text || null
                 });
@@ -420,6 +421,7 @@ async function restorePhotos(photosData, db) {
                 timestamp: photoData.timestamp,
                 direction: photoData.direction ?? null,
                 facing: photoData.facing || null,
+                compassHeading: photoData.compassHeading ?? null,
                 location: photoData.location,
                 text: photoData.text || null
             };
