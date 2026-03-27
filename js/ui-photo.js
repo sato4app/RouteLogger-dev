@@ -137,25 +137,26 @@ export async function showPhotoList() {
 
                 item.appendChild(thumbDiv);
 
-                // サムネール下のメタ情報
-                if (photo.facing || hasDirection) {
-                    const meta = document.createElement('div');
-                    meta.className = 'photo-meta';
-                    if (photo.facing) {
-                        const facingEl = document.createElement('span');
-                        facingEl.textContent = `進行方向: ${photo.facing}`;
-                        meta.appendChild(facingEl);
-                    }
-                    if (hasDirection) {
-                        const deg = typeof photo.direction === 'number' ? photo.direction :
-                                    photo.direction === 'left' ? -60 :
-                                    photo.direction === 'right' ? 60 : 0;
-                        const dirEl = document.createElement('span');
-                        dirEl.textContent = `進行角度: ${deg}°`;
-                        meta.appendChild(dirEl);
-                    }
-                    item.appendChild(meta);
+                // サムネール下のメタ情報（常に表示）
+                const meta = document.createElement('div');
+                meta.className = 'photo-meta';
+
+                const facingEl = document.createElement('span');
+                facingEl.textContent = `進行方向: ${photo.facing ?? 'null'}`;
+                meta.appendChild(facingEl);
+
+                const dirEl = document.createElement('span');
+                if (hasDirection) {
+                    const deg = typeof photo.direction === 'number' ? photo.direction :
+                                photo.direction === 'left' ? -60 :
+                                photo.direction === 'right' ? 60 : 0;
+                    dirEl.textContent = `進行角度: ${deg}°`;
+                } else {
+                    dirEl.textContent = '進行角度: null';
                 }
+                meta.appendChild(dirEl);
+
+                item.appendChild(meta);
 
                 item.addEventListener('click', () => showPhotoViewer(photo, photos, index));
                 photoGrid.appendChild(item);
