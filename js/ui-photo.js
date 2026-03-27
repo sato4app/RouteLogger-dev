@@ -145,12 +145,31 @@ export async function showPhotoList() {
                 let tsText = 'null';
                 if (photo.timestamp != null) {
                     const d = new Date(photo.timestamp);
-                    const yyyy = d.getFullYear();
-                    const mm = String(d.getMonth() + 1).padStart(2, '0');
-                    const dd = String(d.getDate()).padStart(2, '0');
-                    const hh = String(d.getHours()).padStart(2, '0');
-                    const min = String(d.getMinutes()).padStart(2, '0');
-                    tsText = `${yyyy}/${mm}/${dd} ${hh}:${min}`;
+                    if (!isNaN(d.getTime())) {
+                        try {
+                            const formatter = new Intl.DateTimeFormat('ja-JP', {
+                                timeZone: 'Asia/Tokyo',
+                                year: 'numeric', month: '2-digit', day: '2-digit',
+                                hour: '2-digit', minute: '2-digit',
+                                hourCycle: 'h23'
+                            });
+                            const parts = formatter.formatToParts(d);
+                            const p = {};
+                            parts.forEach(part => p[part.type] = part.value);
+                            if (p.year && p.month && p.day && p.hour && p.minute) {
+                                tsText = `${p.year}/${p.month}/${p.day} ${p.hour}:${p.minute}`;
+                            } else {
+                                tsText = formatter.format(d).replace(/-/g, '/');
+                            }
+                        } catch(e) {
+                            const yyyy = d.getFullYear();
+                            const mm = String(d.getMonth() + 1).padStart(2, '0');
+                            const dd = String(d.getDate()).padStart(2, '0');
+                            const hh = String(d.getHours()).padStart(2, '0');
+                            const min = String(d.getMinutes()).padStart(2, '0');
+                            tsText = `${yyyy}/${mm}/${dd} ${hh}:${min}`;
+                        }
+                    }
                 }
                 const tsEl = document.createElement('span');
                 tsEl.textContent = `Timestamp: ${tsText}`;
@@ -166,7 +185,7 @@ export async function showPhotoList() {
                 if (hasDirection) {
                     const deg = typeof photo.direction === 'number' ? photo.direction :
                                 photo.direction === 'left' ? -60 :
-                                photo.direction === 'right' ? 60 : 0;
+                                photo.direction === 'right' ? 60 : photo.direction;
                     dirEl.textContent = `Direction: ${deg}°`;
                 } else {
                     dirEl.textContent = 'Direction: null';
@@ -175,12 +194,24 @@ export async function showPhotoList() {
 
                 // Compass
                 const compassEl = document.createElement('span');
-                compassEl.textContent = `Compass: ${photo.compassHeading != null ? photo.compassHeading + '°' : 'null'}`;
+                if (photo.compassHeading != null || photo.compassDirection != null) {
+                    function get16Dir(deg) {
+                        if (deg == null) return '';
+                        const dirs = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
+                        return dirs[Math.round(deg / 22.5) % 16];
+                    }
+                    const dirStr = photo.compassDirection || get16Dir(photo.compassHeading);
+                    const degStr = photo.compassHeading != null ? `（${photo.compassHeading}°）` : '';
+                    compassEl.textContent = `Compass: ${dirStr}${degStr}`;
+                } else {
+                    compassEl.textContent = 'Compass: null';
+                }
                 meta.appendChild(compassEl);
 
                 // Memo
                 const memoEl = document.createElement('span');
-                memoEl.textContent = `Memo: ${photo.text ?? 'null'}`;
+                const memoText = photo.text ?? photo.memo ?? 'null';
+                memoEl.textContent = `Memo: ${memoText}`;
                 meta.appendChild(memoEl);
 
                 // Size（画像ロード後に更新）
