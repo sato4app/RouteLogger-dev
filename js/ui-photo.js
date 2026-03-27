@@ -126,12 +126,23 @@ export async function showPhotoList() {
 
                 const hasDirection = photo.direction !== null && photo.direction !== undefined && photo.direction !== '';
                 if (hasDirection) {
-                    const deg = typeof photo.direction === 'number' ? photo.direction :
-                                photo.direction === 'left' ? -60 :
-                                photo.direction === 'right' ? 60 : 0;
+                    let deg = parseFloat(photo.direction);
+                    if (isNaN(deg)) {
+                        deg = photo.direction === 'left' ? -60 :
+                              photo.direction === 'right' ? 60 : 0;
+                    }
                     const badge = document.createElement('div');
                     badge.className = 'photo-direction-badge';
-                    badge.innerHTML = `<svg viewBox="0 0 14 14" width="14" height="14" style="transform:rotate(${deg}deg)"><path d="M7 2 L11 11 L7 8.5 L3 11 Z" fill="white"/></svg>`;
+                    // 角度のテキストも表示できるようにバッジのスタイルを上書き調整
+                    badge.style.width = 'auto';
+                    badge.style.padding = '2px 6px';
+                    badge.style.borderRadius = '12px';
+                    badge.style.gap = '4px';
+                    badge.style.fontSize = '10px';
+                    badge.style.fontWeight = 'bold';
+                    badge.style.color = 'white';
+                    
+                    badge.innerHTML = `<svg viewBox="0 0 14 14" width="12" height="12" style="transform:rotate(${deg}deg)"><path d="M7 2 L11 11 L7 8.5 L3 11 Z" fill="white"/></svg><span>${deg}°</span>`;
                     thumbDiv.appendChild(badge);
                 }
 
