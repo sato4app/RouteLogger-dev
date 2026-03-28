@@ -340,10 +340,7 @@ export function displayExternalGeoJSON(geoJson) {
                 if (feature.properties) {
                     let popupContent = '';
 
-                    // GeoJSONのPointの場合、Nameを表示
                     if (feature.geometry && feature.geometry.type === 'Point') {
-                        const name = feature.properties.name || 'No Name';
-                        popupContent += `<b>Name:</b> ${name}<br>`;
                     } else {
                         // ラインなどの場合は従来通りNameがあれば表示
                         if (feature.properties.name) {
