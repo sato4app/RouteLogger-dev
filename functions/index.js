@@ -84,14 +84,16 @@ function escapeXml(str) {
 // ─── Google Drive ユーティリティ ───────────────────────────────────────────────
 
 /**
- * Google Drive クライアントを取得（Service Account の ADC を使用）
- * functions/.env に GDRIVE_FOLDER_ID を設定して有効化
+ * Google Drive クライアントを取得（OAuth2 ユーザー認証を使用）
+ * functions/.env に GDRIVE_FOLDER_ID / GDRIVE_CLIENT_ID / GDRIVE_CLIENT_SECRET / GDRIVE_REFRESH_TOKEN を設定して有効化
  */
 async function getDriveClient() {
-    const auth = await google.auth.getClient({
-        scopes: ['https://www.googleapis.com/auth/drive'],
-    });
-    return google.drive({ version: 'v3', auth });
+    const oauth2Client = new google.auth.OAuth2(
+        process.env.GDRIVE_CLIENT_ID,
+        process.env.GDRIVE_CLIENT_SECRET,
+    );
+    oauth2Client.setCredentials({ refresh_token: process.env.GDRIVE_REFRESH_TOKEN });
+    return google.drive({ version: 'v3', auth: oauth2Client });
 }
 
 /**
