@@ -10,7 +10,16 @@ window._showPhotoLightbox = function(url) {
     const lb = document.getElementById('photoLightbox');
     const img = document.getElementById('photoLightboxImg');
     if (!lb || !img) return;
-    img.src = url;
+
+    // Google Drive の /view URL は HTMLページのため img.src に使えない。
+    // /uc?export=view&id=FILE_ID 形式に変換して直接画像を取得する。
+    let imageUrl = url;
+    const driveViewMatch = url.match(/https:\/\/drive\.google\.com\/file\/d\/([^/?]+)/);
+    if (driveViewMatch) {
+        imageUrl = `https://drive.google.com/uc?export=view&id=${driveViewMatch[1]}`;
+    }
+
+    img.src = imageUrl;
     lb.classList.remove('hidden');
 };
 

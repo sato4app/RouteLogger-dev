@@ -149,7 +149,7 @@ async function uploadFileToDrive(drive, folderId, filename, buffer, mimeType) {
     });
     return {
         id: fileId,
-        viewUrl: `https://drive.google.com/file/d/${fileId}/view`,
+        viewUrl: `https://drive.google.com/uc?export=view&id=${fileId}`,
     };
 }
 
