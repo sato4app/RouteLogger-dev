@@ -354,56 +354,52 @@ export function displayExternalGeoJSON(geoJson) {
 
                     if (popupContent) {
                         // 相対パスのimg srcをdata-lazysrcに変換してブラウザの即時リクエストを防ぐ
-                        const boundContent = popupContent.replace(
+                        let boundContent = popupContent.replace(
                             /<img([^>]*)\ssrc="(?!https?:|blob:|data:)([^"]*)"([^>]*?)>/gi,
                             '<img$1 data-lazysrc="$2"$3>'
                         );
+                        // http(s)リンクをlightbox onclickに変換（bindPopup前に行うことでasync問題を回避）
+                        boundContent = boundContent.replace(
+                            /<a([^>]*)\shref="(https?:[^"]*)"([^>]*)>/gi,
+                            (_, before, href, after) => {
+                                const decodedUrl = href.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+                                const safe = decodedUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                                return `<a${before} href="#"${after} onclick="event.preventDefault();window._showPhotoLightbox('${safe}');">`;
+                            }
+                        );
                         layer.bindPopup(boundContent);
 
-                        // ポップアップが開いたときに画像をロードする
+                        // ポップアップが開いたときにサムネール画像をIndexedDBからロードする
                         layer.on('popupopen', async () => {
                             const popup = layer.getPopup();
-                            const content = popup.getContent(); // String or HTMLElement
+                            const content = popup.getContent();
                             const parser = new DOMParser();
                             const doc = parser.parseFromString(content, 'text/html');
-                            const imgs = doc.querySelectorAll('img');
 
                             let updated = false;
                             const importId = feature.properties.importId;
 
-                            if (importId && imgs.length > 0) {
-                                for (const img of imgs) {
+                            // data-lazysrcからblobを読み込む
+                            if (importId) {
+                                for (const img of doc.querySelectorAll('img[data-lazysrc]')) {
                                     const lazySrc = img.getAttribute('data-lazysrc');
-                                    if (lazySrc) {
-                                        try {
-                                            const blob = await getExternalPhoto(importId, lazySrc);
-                                            if (blob) {
-                                                img.src = URL.createObjectURL(blob);
-                                                updated = true;
-                                            }
-                                        } catch (e) {
-                                            console.warn('外部画像読み込み失敗:', lazySrc, e);
+                                    try {
+                                        const blob = await getExternalPhoto(importId, lazySrc);
+                                        if (blob) {
+                                            img.src = URL.createObjectURL(blob);
+                                            updated = true;
                                         }
+                                    } catch (e) {
+                                        console.warn('外部画像読み込み失敗:', lazySrc, e);
                                     }
                                 }
                             }
 
-                            // ポップアップ内の画像サイズを元サイズのまま表示（拡大しない）
-                            Array.from(doc.querySelectorAll('img')).forEach(img => {
+                            // 画像サイズ制限
+                            doc.querySelectorAll('img').forEach(img => {
                                 img.style.maxWidth = '160px';
                                 img.style.height = 'auto';
                                 updated = true;
-                            });
-
-                            // http(s)リンクをlightboxボタンに変換
-                            Array.from(doc.querySelectorAll('a[href]')).forEach(link => {
-                                const href = link.getAttribute('href');
-                                if (href && (href.startsWith('http://') || href.startsWith('https://'))) {
-                                    const safe = href.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-                                    link.setAttribute('onclick', `event.preventDefault();window._showPhotoLightbox('${safe}');`);
-                                    link.setAttribute('href', '#');
-                                    updated = true;
-                                }
                             });
 
                             if (updated) {
