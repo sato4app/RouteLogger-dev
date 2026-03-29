@@ -353,7 +353,12 @@ export function displayExternalGeoJSON(geoJson) {
                     }
 
                     if (popupContent) {
-                        layer.bindPopup(popupContent);
+                        // 相対パスのimg srcをdata-lazysrcに変換してブラウザの即時リクエストを防ぐ
+                        const boundContent = popupContent.replace(
+                            /<img([^>]*)\ssrc="(?!https?:|blob:|data:)([^"]*)"([^>]*?)>/gi,
+                            '<img$1 data-lazysrc="$2"$3>'
+                        );
+                        layer.bindPopup(boundContent);
 
                         // ポップアップが開いたときに画像をロードする
                         layer.on('popupopen', async () => {
@@ -368,28 +373,16 @@ export function displayExternalGeoJSON(geoJson) {
 
                             if (importId && imgs.length > 0) {
                                 for (const img of imgs) {
-                                    const src = img.getAttribute('src');
-                                    // "images/photo_..." のようなパスをチェック
-                                    // 実際のファイル名は "images/" を含むかどうか保存時によるが、
-                                    // kmz-handler.jsでは "images/photo_..." としてHTMLに埋め込んでいる。
-                                    // 一方、保存時は `saveExternalPhoto(importId, imgFile.name, blob)`
-                                    // zip内のファイル名は "images/photo_X.jpg" なので、imgFile.nameも "images/photo_X.jpg" になるはず。
-
-                                    if (src && !src.startsWith('blob:') && !src.startsWith('http')) {
-                                        // 外部写真ストアからBlobを取得
+                                    const lazySrc = img.getAttribute('data-lazysrc');
+                                    if (lazySrc) {
                                         try {
-                                            // srcが "images/photo_123.jpg" の場合、そのままキーとして使う
-                                            const blob = await getExternalPhoto(importId, src);
+                                            const blob = await getExternalPhoto(importId, lazySrc);
                                             if (blob) {
-                                                const url = URL.createObjectURL(blob);
-                                                img.src = url;
-                                                // メモリリーク防止のため、ポップアップが閉じるときにrevokeしたほうがいいが、
-                                                // 複雑になるので今回は省略するか、別途管理が必要。
-                                                // シンプルに: URLをセット
+                                                img.src = URL.createObjectURL(blob);
                                                 updated = true;
                                             }
                                         } catch (e) {
-                                            console.warn('外部画像読み込み失敗:', src, e);
+                                            console.warn('外部画像読み込み失敗:', lazySrc, e);
                                         }
                                     }
                                 }
