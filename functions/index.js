@@ -107,6 +107,8 @@ async function getOrCreateDriveFolder(drive, parentId, name) {
         q: `name='${escaped}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`,
         fields: 'files(id)',
         spaces: 'drive',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
     });
     if (res.data.files.length > 0) return res.data.files[0].id;
     const folder = await drive.files.create({
@@ -116,6 +118,7 @@ async function getOrCreateDriveFolder(drive, parentId, name) {
             parents: [parentId],
         },
         fields: 'id',
+        supportsAllDrives: true,
     });
     return folder.data.id;
 }
@@ -134,11 +137,13 @@ async function uploadFileToDrive(drive, folderId, filename, buffer, mimeType) {
         requestBody: { name: filename, parents: [folderId] },
         media: { mimeType, body: Readable.from(buffer) },
         fields: 'id',
+        supportsAllDrives: true,
     });
     const fileId = res.data.id;
     await drive.permissions.create({
         fileId,
         requestBody: { role: 'reader', type: 'anyone' },
+        supportsAllDrives: true,
     });
     return {
         id: fileId,
