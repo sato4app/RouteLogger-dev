@@ -47,6 +47,18 @@ export async function checkAndUpdateUserStatus() {
  * 認証UIのイベントリスナーを初期化
  */
 export function initAuthUI() {
+    // ユーザー名入力: 半角英数字以外を即時除去（全角・記号の入力を防ぐ）
+    document.getElementById('registerUsernameInput')?.addEventListener('input', function () {
+        const pos = this.selectionStart;
+        const before = this.value;
+        const after = before.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        if (before !== after) {
+            this.value = after;
+            // カーソル位置を除去した文字数分だけ前にずらす
+            this.setSelectionRange(pos - (before.length - after.length), pos - (before.length - after.length));
+        }
+    });
+
     // 同意チェックボックスでOKボタンの有効/無効を切り替え
     document.getElementById('userEditAgreeCheck')?.addEventListener('change', (e) => {
         const saveBtn = document.getElementById('userEditSaveBtn');
