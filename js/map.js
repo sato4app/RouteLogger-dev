@@ -7,11 +7,6 @@ import { calculateHeading } from './utils.js';
 
 /** ポップアップ内の外部リンク画像をlightboxで表示 */
 window._showPhotoLightbox = function(url) {
-    // Google Drive URLは<img src>で直接表示できないため新しいタブで開く
-    if (url.includes('drive.google.com')) {
-        window.open(url, '_blank');
-        return;
-    }
     const lb = document.getElementById('photoLightbox');
     const img = document.getElementById('photoLightboxImg');
     if (!lb || !img) return;
@@ -391,7 +386,20 @@ export function displayExternalGeoJSON(geoJson) {
                                     try {
                                         const blob = await getExternalPhoto(importId, lazySrc);
                                         if (blob) {
-                                            img.src = URL.createObjectURL(blob);
+                                            const blobUrl = URL.createObjectURL(blob);
+                                            img.src = blobUrl;
+                                            img.style.maxWidth = '160px';
+                                            img.style.height = 'auto';
+                                            img.style.cursor = 'pointer';
+                                            // タップで lightbox 拡大表示
+                                            img.setAttribute('onclick', `window._showPhotoLightbox('${blobUrl}')`);
+                                            // 同じ説明内の Drive リンクも同じ blob で lightbox を開く
+                                            const container = img.parentElement;
+                                            if (container) {
+                                                container.querySelectorAll('a[onclick*="drive.google.com"]').forEach(a => {
+                                                    a.setAttribute('onclick', `event.preventDefault();window._showPhotoLightbox('${blobUrl}')`);
+                                                });
+                                            }
                                             updated = true;
                                         }
                                     } catch (e) {
@@ -400,8 +408,8 @@ export function displayExternalGeoJSON(geoJson) {
                                 }
                             }
 
-                            // 画像サイズ制限
-                            doc.querySelectorAll('img').forEach(img => {
+                            // blob未取得の画像はサイズのみ制限
+                            doc.querySelectorAll('img:not([onclick])').forEach(img => {
                                 img.style.maxWidth = '160px';
                                 img.style.height = 'auto';
                                 updated = true;
