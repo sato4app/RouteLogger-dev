@@ -72,6 +72,24 @@ async function addBadgeToThumbnail(buffer, size, direction) {
         .toBuffer();
 }
 
+/** 写真URLから元のファイル名を抽出する（例: "1234567890.jpg"） */
+function extractFilenameFromUrl(url) {
+    try {
+        const urlObj = new URL(url);
+        // Firebase Storage URL: pathname が /v0/b/.../o/path%2Ffilename.jpg の形式
+        const oMatch = urlObj.pathname.match(/\/o\/(.+)$/);
+        if (oMatch) {
+            const path = decodeURIComponent(oMatch[1]);
+            return path.split('/').pop() || null;
+        }
+        // 汎用: パスの最後のセグメント
+        const pathname = decodeURIComponent(urlObj.pathname);
+        return pathname.split('/').pop() || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 /** XML 特殊文字をエスケープ */
 function escapeXml(str) {
     return String(str || '')
@@ -402,7 +420,8 @@ exports.generateKmzAndSendEmail = functions
                 thumbnailBuffers[i] = (photo.direction != null && photo.direction !== '')
                     ? await addBadgeToThumbnail(resized, thumbnailSize, photo.direction)
                     : resized;
-                photoFilenames[i] = `thumb_${String(i + 1).padStart(3, '0')}.jpg`;
+                const origName = extractFilenameFromUrl(photo.url);
+                photoFilenames[i] = origName ? `thumb_${origName}` : `thumb_${String(i + 1).padStart(3, '0')}.jpg`;
             } catch (e) {
                 functions.logger.warn(`写真 ${i + 1} のサムネール作成に失敗: ${e.message}`);
             }
@@ -543,7 +562,8 @@ exports.migrateRoutesToDrive = functions
                 try {
                     const buffer = await downloadBuffer(photo.url);
                     photoBuffers[i] = buffer;
-                    photoFilenames[i] = `thumb_${String(i + 1).padStart(3, '0')}.jpg`;
+                    const origName = extractFilenameFromUrl(photo.url);
+                    photoFilenames[i] = origName ? `thumb_${origName}` : `thumb_${String(i + 1).padStart(3, '0')}.jpg`;
                     const resized = await resizeToSquare(buffer, thumbnailSize);
                     thumbnailBuffers[i] = (photo.direction != null && photo.direction !== '')
                         ? await addBadgeToThumbnail(resized, thumbnailSize, photo.direction)

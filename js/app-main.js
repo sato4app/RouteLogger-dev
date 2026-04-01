@@ -5,7 +5,7 @@ import { initIndexedDB } from './db.js';
 import { initMap, displayPhotoMarkers } from './map.js';
 import { startTracking, stopTracking, handleVisibilityChange, handleDeviceOrientation } from './tracking.js';
 import { takePhoto, closeCameraDialog, capturePhoto, savePhotoWithDirection, handleTextButton, retakePhoto } from './camera.js';
-import { saveToFirebase, reloadFromFirebase } from './firebase-ops.js';
+import { saveToFirebase } from './firebase-ops.js';
 import { updateStatus, showPhotoList, closePhotoList, closePhotoViewer, showDataSize, closeStatsDialog, closeDocumentListDialog, showPhotoFromMarker, initPhotoViewerControls, initClock, initSettings, showSettingsDialog, showDocNameDialog, setUiBusy } from './ui.js';
 import { getAllExternalData, getAllTracks, getAllPhotos, clearIndexedDBSilent, clearRouteLogData, restoreTrack, savePhoto } from './db.js';
 import { displayExternalGeoJSON, displayAllTracks, clearMapData, displayEmergencyPoints, clearEmergencyPoints, addStartMarker, addEndMarker } from './map.js';
@@ -380,24 +380,13 @@ function setupEventListeners() {
         fileInput.click();
     }
 
-    // Load Button: Firebase on → 選択ダイアログ / off → ファイルから読み込み
+    // Load Button: KMZ/KML/GeoJSONファイルから読み込み（クラウドからの読み込みは廃止）
     const dataReloadBtn = document.getElementById('dataReloadBtn');
     if (dataReloadBtn) {
-        dataReloadBtn.addEventListener('click', async (e) => {
+        dataReloadBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             returnToMainControl();
-            if (state.isFirebaseEnabled) {
-                const fromFile = confirm('KMZファイルから読み込む場合は「OK」\nFirebaseから読み込む場合は「キャンセル」を押してください');
-                if (fromFile) {
-                    openFileImport();
-                } else {
-                    const authed = await ensureFirebaseAuth();
-                    if (!authed) return;
-                    await reloadFromFirebase();
-                }
-            } else {
-                openFileImport();
-            }
+            openFileImport();
         });
     }
 
