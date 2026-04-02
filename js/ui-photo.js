@@ -1,7 +1,7 @@
 // RouteLogger - 写真関連UI
 
 import * as state from './state.js';
-import { getAllPhotos, updatePhoto, deletePhoto, getAllExternalPhotos } from './db.js';
+import { getAllPhotos, updatePhoto, deletePhoto, getAllExternalPhotos, getAllExternalData } from './db.js';
 import { removePhotoMarker } from './map.js';
 import { toggleVisibility, updateStatus } from './ui-common.js';
 
@@ -148,17 +148,103 @@ function renderPhotoGrid(photos, grid) {
 }
 
 /**
- * 外部写真グリッドを描画（external_photosストア用）
- * @param {Array} extPhotos
+ * GeoJSON(externals)とexternal_photosを結合して表示用リストを構築
+ * - GeoJSONのPointフィーチャーに紐づく元写真のみ抽出
+ * - サムネイル参照(thumb_xxx)の場合は元写真に差し替え
+ * - 位置情報をGeoJSONの座標から取得
+ * @returns {Promise<Array>}
+ */
+async function buildExternalPhotoList() {
+    const [externals, allExtPhotos] = await Promise.all([
+        getAllExternalData(),
+        getAllExternalPhotos()
+    ]);
+
+    // importId -> fileName -> photoRecord のマップを構築
+    const photoMap = new Map();
+    for (const p of allExtPhotos) {
+        if (!photoMap.has(p.importId)) photoMap.set(p.importId, new Map());
+        photoMap.get(p.importId).set(p.fileName, p);
+    }
+
+    const displayList = [];
+    const usedKeys = new Set();
+
+    for (const ext of externals) {
+        if (!ext.data || !ext.data.features) continue;
+
+        for (const feature of ext.data.features) {
+            if (feature.geometry?.type !== 'Point') continue;
+            const props = feature.properties || {};
+            const description = props.description || '';
+
+            // descriptionのHTMLからimg srcを抽出
+            const imgMatch = description.match(/src="([^"]+\.(?:jpg|jpeg|png|gif))"/i);
+            if (!imgMatch) continue;
+
+            const imgSrc = imgMatch[1];
+            const fImportId = props.importId;
+            const fPhotoMap = fImportId ? photoMap.get(fImportId) : null;
+            if (!fPhotoMap) continue;
+
+            // サムネイル参照の場合は元写真を探す（"thumb_" プレフィックスを除去）
+            const baseName = imgSrc.split('/').pop();
+            const dir = imgSrc.includes('/') ? imgSrc.substring(0, imgSrc.lastIndexOf('/') + 1) : '';
+            let targetFileName = imgSrc;
+
+            if (baseName.toLowerCase().startsWith('thumb_')) {
+                const originalBase = baseName.slice(6);
+                const originalPath = dir + originalBase;
+                if (fPhotoMap.has(originalPath)) {
+                    targetFileName = originalPath;
+                }
+                // 元写真が見つからなければそのままサムネイルを使う
+            }
+
+            const photoRecord = fPhotoMap.get(targetFileName) || fPhotoMap.get(imgSrc);
+            if (!photoRecord) continue;
+
+            const recordKey = `${fImportId}_${photoRecord.fileName}`;
+            if (usedKeys.has(recordKey)) continue;
+            usedKeys.add(recordKey);
+
+            const coords = feature.geometry.coordinates;
+            const lng = parseFloat(coords[0]);
+            const lat = parseFloat(coords[1]);
+
+            displayList.push({
+                ...photoRecord,
+                location: (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) ? { lat, lng } : null,
+                name: props.name || photoRecord.fileName
+            });
+        }
+    }
+
+    // GeoJSONと紐づかない場合のフォールバック: thumb_でないファイルのみ表示
+    if (displayList.length === 0) {
+        for (const p of allExtPhotos) {
+            const baseName = (p.fileName || '').split('/').pop();
+            if (!baseName.toLowerCase().startsWith('thumb_')) {
+                displayList.push({ ...p, location: null, name: p.fileName });
+            }
+        }
+    }
+
+    return displayList;
+}
+
+/**
+ * 外部写真グリッドを描画（GeoJSON結合済みリスト用）
+ * @param {Array} extPhotoList - buildExternalPhotoList() の結果
  * @param {HTMLElement} grid
  */
-function renderExternalPhotoGrid(extPhotos, grid) {
+function renderExternalPhotoGrid(extPhotoList, grid) {
     grid.innerHTML = '';
-    if (extPhotos.length === 0) {
+    if (extPhotoList.length === 0) {
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">外部写真がありません</p>';
         return;
     }
-    extPhotos.forEach((photo, index) => {
+    extPhotoList.forEach((photo, index) => {
         const item = document.createElement('div');
         item.className = 'photo-item';
 
@@ -166,11 +252,9 @@ function renderExternalPhotoGrid(extPhotos, grid) {
         thumbDiv.className = 'photo-thumb';
 
         const img = document.createElement('img');
-        img.alt = photo.fileName || '外部写真';
-        // BlobをObject URLに変換して表示
+        img.alt = photo.name || '外部写真';
         const objectUrl = URL.createObjectURL(photo.blob);
         img.src = objectUrl;
-        // 不要になったらObject URLを解放
         img.onload = () => URL.revokeObjectURL(objectUrl);
         thumbDiv.appendChild(img);
         item.appendChild(thumbDiv);
@@ -178,11 +262,11 @@ function renderExternalPhotoGrid(extPhotos, grid) {
         const meta = document.createElement('div');
         meta.className = 'photo-meta';
         const nameEl = document.createElement('span');
-        nameEl.textContent = photo.fileName || '';
+        nameEl.textContent = photo.name || '';
         meta.appendChild(nameEl);
         item.appendChild(meta);
 
-        item.addEventListener('click', () => showExternalPhotoViewer(photo, extPhotos, index));
+        item.addEventListener('click', () => showExternalPhotoViewer(photo, extPhotoList, index));
         grid.appendChild(item);
     });
 }
@@ -204,14 +288,14 @@ export async function showPhotoList() {
     const externalPhotoTabBtn = document.getElementById('externalPhotoTabBtn');
 
     try {
-        const [photos, extPhotos] = await Promise.all([getAllPhotos(), getAllExternalPhotos()]);
+        const [photos, extPhotoList] = await Promise.all([getAllPhotos(), buildExternalPhotoList()]);
 
         // カウント更新
         if (photoTabCount) photoTabCount.textContent = photos.length;
-        if (externalPhotoTabCount) externalPhotoTabCount.textContent = extPhotos.length;
+        if (externalPhotoTabCount) externalPhotoTabCount.textContent = extPhotoList.length;
 
         renderPhotoGrid(photos, photoGrid);
-        renderExternalPhotoGrid(extPhotos, externalPhotoGrid);
+        renderExternalPhotoGrid(extPhotoList, externalPhotoGrid);
 
         // タブの初期状態を設定（撮影写真タブをアクティブに）
         photoGrid.classList.remove('hidden');
@@ -264,8 +348,8 @@ function showExternalPhotoViewer(photo, allPhotos, index) {
         const viewerPhoto = {
             data: dataUrl,
             timestamp: photo.timestamp,
-            text: photo.fileName || null,
-            location: null,
+            text: photo.name || photo.fileName || null,
+            location: photo.location || null,
             _isExternal: true
         };
 
