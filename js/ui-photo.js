@@ -251,8 +251,13 @@ export async function showPhotoList() {
  * @param {number} index
  */
 function showExternalPhotoViewer(photo, allPhotos, index) {
+    if (!photo || !photo.blob) {
+        console.error('外部写真のデータが見つかりません:', photo);
+        return;
+    }
     // BlobをData URLに変換してから既存ビューアを流用
     const reader = new FileReader();
+    reader.onerror = () => console.error('外部写真の読み込みに失敗しました');
     reader.onload = () => {
         const dataUrl = reader.result;
         // ビューア用の疑似photoオブジェクト（data フィールドのみ必要）
