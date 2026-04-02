@@ -297,11 +297,12 @@ export async function showPhotoList() {
         renderPhotoGrid(photos, photoGrid);
         renderExternalPhotoGrid(extPhotoList, externalPhotoGrid);
 
-        // タブの初期状態を設定（撮影写真タブをアクティブに）
-        photoGrid.classList.remove('hidden');
-        externalPhotoGrid.classList.add('hidden');
-        if (photoTabBtn) photoTabBtn.classList.add('active');
-        if (externalPhotoTabBtn) externalPhotoTabBtn.classList.remove('active');
+        // 外部写真のみの場合は外部写真タブ、それ以外は撮影写真タブをアクティブに
+        const showExternal = extPhotoList.length > 0 && photos.length === 0;
+        photoGrid.classList.toggle('hidden', showExternal);
+        externalPhotoGrid.classList.toggle('hidden', !showExternal);
+        if (photoTabBtn) photoTabBtn.classList.toggle('active', !showExternal);
+        if (externalPhotoTabBtn) externalPhotoTabBtn.classList.toggle('active', showExternal);
 
         // タブクリックイベント（重複登録防止のためonclickで設定）
         if (photoTabBtn) {
