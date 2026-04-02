@@ -486,6 +486,29 @@ export function saveExternalPhoto(importId, fileName, blob) {
     });
 }
 /**
+ * 全外部写真データを取得
+ * @returns {Promise<Array>} 外部写真レコードの配列
+ */
+export function getAllExternalPhotos() {
+    return new Promise((resolve, reject) => {
+        if (!state.db) {
+            resolve([]);
+            return;
+        }
+        try {
+            const transaction = state.db.transaction([STORE_EXTERNAL_PHOTOS], 'readonly');
+            const store = transaction.objectStore(STORE_EXTERNAL_PHOTOS);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error);
+        } catch (error) {
+            console.warn('外部写真全件取得エラー:', error);
+            resolve([]);
+        }
+    });
+}
+
+/**
  * 外部写真データを取得
  * @param {string} importId - インポートID
  * @param {string} fileName - ファイル名

@@ -161,10 +161,15 @@
     <!-- Photo List Dialog -->
     <div id="photoListContainer" class="full-screen-dialog hidden">
         <header class="dialog-header">
-            <h2>Photo Gallery</h2>
+            <h2 id="photoGalleryTitle">Photo Gallery</h2>
             <button id="closeListBtn" class="close-icon-btn">✕</button>
         </header>
+        <div class="photo-tab-bar">
+            <button id="photoTabBtn" class="photo-tab active">撮影写真 (<span id="photoTabCount">0</span>)</button>
+            <button id="externalPhotoTabBtn" class="photo-tab">外部写真 (<span id="externalPhotoTabCount">0</span>)</button>
+        </div>
         <div id="photoGrid" class="grid-content"></div>
+        <div id="externalPhotoGrid" class="grid-content hidden"></div>
     </div>
 
     <!-- Photo Viewer Dialog -->

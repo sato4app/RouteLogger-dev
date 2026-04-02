@@ -1,7 +1,7 @@
 # RouteLogger 機能仕様書
 
-**バージョン:** 202603
-**最終更新日:** 2026年3月7日
+**バージョン:** 2026.04
+**最終更新日:** 2026年4月1日
 
 ---
 
@@ -157,6 +157,7 @@ RouteLogger - GPS位置記録
 
 #### 3.3.1 写真一覧（Listボタン）
 - 保存済み写真をグリッド表示
+- **グリッド内サムネール下:** メモテキストのみ表示（ラベルなし）。メモがない場合は何も表示しない
 - サムネイルクリックで拡大表示
 - 拡大表示時に撮影日時、位置情報、方向角度、facing、テキストメモを表示
 - 前後ナビゲーションボタンで写真切り替え
@@ -193,15 +194,20 @@ RouteLogger - GPS位置記録
      - `images/photo_{id}.jpg`: 写真ファイル（Base64→Binary変換）
      - MIMEタイプ: `application/vnd.google-earth.kmz`
 
-#### 3.3.4 データ読み込み（Reloadボタン）
+**Firebase ONの場合（クラウド保存後のKMZ生成・メール送信）:**
+- Cloud Function `generateKmzAndSendEmail` がKMZを生成してメール送信
+- KMZ内のサムネールファイル名: `thumb_<元のJPEGファイル名>` 形式
+  - Firebase Storage URL から元のファイル名を抽出（例: `thumb_IMG_0123.jpg`）
+  - 元ファイル名が取得できない場合のフォールバック: `thumb_001.jpg`（連番）
+- **KMLポップアップ表示形式:**
+  - タイムスタンプ: `yyyy/MM/dd HH:mm`（ラベルなし）
+  - 方向: `<度数>° (<Facing>)` 形式（例: `130° (Backward)`）（ラベルなし、方向と facing を1行に統合）
+  - メモ: テキストのみ（ラベルなし）
+  - Compass、サイズは表示しない
 
-**Firebase ONの場合（クラウドから読み込み）:**
-- Firestoreからプロジェクト一覧を取得（作成日時の降順）
-- ドキュメント選択ダイアログを表示
-- 選択したドキュメントのデータをIndexedDBに復元
-- 地図上にトラックと写真マーカーを表示
+#### 3.3.4 データ読み込み（Loadボタン）
 
-**Firebase OFFの場合（ファイルから読み込み）:**
+**Firebase設定に関わらず、常にファイルから読み込む（クラウドからの読み込みは廃止）:**
 - ファイル選択ダイアログを表示（対応形式: `.kmz`, `.kml`, `.geojson`, `.json`, `.zip`）
 - RouteLogger製KMZの場合: 現在データをクリアしてトラック・写真を復元
 - 外部KMZ/GeoJSONの場合: 外部レイヤーとして地図上に表示（IndexedDBに保存）
@@ -447,7 +453,7 @@ tracks/
 | List | オレンジ (#FF9800) | 写真一覧表示 |
 | Size | シアン (#00BCD4) | データサイズ表示 |
 | Save | 緑 (#4CAF50) | Firebase保存 or KMZエクスポート |
-| Reload | インディゴ (#3F51B5) | Firebase読み込み or ファイルインポート |
+| Load | インディゴ (#3F51B5) | ファイルインポート（常にファイルから読み込み） |
 | Clear | グレー | データ初期化 |
 
 ### 6.3 設定ダイアログ
@@ -563,8 +569,8 @@ RouteLogger/
 │   ├── icon-192.png
 │   └── icon-512.png
 └── docs/
-    ├── funcspec-202603.md    # 機能仕様書（本書）
-    ├── UsersGuide-202603.md  # 利用者の手引
+    ├── funcspec-202604.md    # 機能仕様書（本書）
+    ├── UsersGuide-202604.md  # 利用者の手引
     └── FIREBASE_SETUP.md     # Firebase設定ガイド
 ```
 
@@ -600,4 +606,5 @@ RouteLogger/
 | 2026-02-01 | 202601 | 写真撮影フロー改善（上書き保存・保存後画面維持） |
 | 2026-02-02 | 202602 | アプリ名をRouteLoggerに変更、IndexedDB名更新 |
 | 2026-02-28 | 202602 | 写真方向をダイアル式に変更（角度数値+facing）、KMZ export/import機能追加、外部レイヤー表示機能追加、設定パネル追加（Firebase切替・時計・facingボタン）、Clearボタン追加、Wake Lock対象をSave/Loadにも拡張、IndexedDB v4（externals/external_photosストア追加）、FirestoreパスをtracksコレクションへIに変更 |
-| 2026-03-07 | 202603 | Saveダイアログタイトルを保存先別に変更（"Save to cloud as..." / "Save to file as..."）、保存開始前ステータスメッセージ追加、写真マーカータップ時にIndexedDB最新データを使用（facing不一致修正）、iOS Shake to Undo防止（visibilitychange時blur・ダイアログcleanup時blur）、Textボタンの入力済み状態を青色で視覚的に表示 |
+| 2026-03-07 | 202603 | Load機能改善（写真一覧・サイズ・外部レイヤー表示）、設定追加（写真解像度・サムネールサイズ・品質）、ユーザー認証UI追加、Saveダイアログタイトルを保存先別に変更（"Save to cloud as..." / "Save to file as..."）、保存開始前ステータスメッセージ追加、写真マーカータップ時にIndexedDB最新データを使用（facing不一致修正）、iOS Shake to Undo防止、Textボタンの入力済み状態を青色で表示 |
+| 2026-04-01 | 202604 | サムネールファイル名を元のJPEGファイル名ベースに変更（`thumb_<元ファイル名>`）、Loadからクラウド読み込みを廃止（KMZファイルのみ）、KMLポップアップ表示形式変更（ラベル廃止・方向とfacingを統合・Compass廃止）、写真一覧グリッドをメモのみ表示に変更 |

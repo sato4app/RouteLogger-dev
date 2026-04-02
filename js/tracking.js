@@ -54,9 +54,22 @@ export async function releaseWakeLock() {
  */
 export async function handleVisibilityChange() {
     if (document.visibilityState === 'hidden') {
-        // 画面がロック/バックグラウンド時にフォーカスを外す（シェイクでUndoダイアログ防止）
-        if (document.activeElement && document.activeElement !== document.body) {
-            document.activeElement.blur();
+        const activeEl = document.activeElement;
+        const isTextInput = activeEl &&
+            (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+
+        // テキスト入力中でない場合: 全入力要素のundoスタックをリセット（iOSシェイクUndoダイアログ防止）
+        if (!isTextInput) {
+            document.querySelectorAll('input, textarea').forEach(el => {
+                const saved = el.value;
+                el.value = '';
+                el.value = saved;
+            });
+        }
+
+        // アクティブ要素のフォーカスを外す
+        if (activeEl && activeEl !== document.body) {
+            activeEl.blur();
         }
     } else if (document.visibilityState === 'visible' && state.isTracking) {
         await requestWakeLock();

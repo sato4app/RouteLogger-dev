@@ -1,7 +1,7 @@
 // RouteLogger - 写真関連UI
 
 import * as state from './state.js';
-import { getAllPhotos, updatePhoto, deletePhoto } from './db.js';
+import { getAllPhotos, updatePhoto, deletePhoto, getAllExternalPhotos } from './db.js';
 import { removePhotoMarker } from './map.js';
 import { toggleVisibility, updateStatus } from './ui-common.js';
 
@@ -88,6 +88,106 @@ export async function showPhotoFromMarker(photo) {
 }
 
 /**
+ * 写真グリッドを描画（photosストア用）
+ * @param {Array} photos
+ * @param {HTMLElement} grid
+ */
+function renderPhotoGrid(photos, grid) {
+    grid.innerHTML = '';
+    if (photos.length === 0) {
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">保存された写真がありません</p>';
+        return;
+    }
+    photos.forEach((photo, index) => {
+        const item = document.createElement('div');
+        item.className = 'photo-item';
+
+        const thumbDiv = document.createElement('div');
+        thumbDiv.className = 'photo-thumb';
+
+        const img = document.createElement('img');
+        img.src = photo.data;
+        img.alt = '写真';
+        thumbDiv.appendChild(img);
+
+        const hasDirection = photo.direction !== null && photo.direction !== undefined && photo.direction !== '';
+        if (hasDirection) {
+            let deg = parseFloat(photo.direction);
+            if (isNaN(deg)) {
+                deg = photo.direction === 'left' ? -60 :
+                      photo.direction === 'right' ? 60 : 0;
+            }
+            const badge = document.createElement('div');
+            badge.className = 'photo-direction-badge';
+            badge.style.width = 'auto';
+            badge.style.padding = '2px 6px';
+            badge.style.borderRadius = '12px';
+            badge.style.gap = '4px';
+            badge.style.fontSize = '10px';
+            badge.style.fontWeight = 'bold';
+            badge.style.color = 'white';
+            badge.innerHTML = `<svg viewBox="0 0 14 14" width="12" height="12" style="transform:rotate(${deg}deg)"><path d="M7 2 L11 11 L7 8.5 L3 11 Z" fill="white"/></svg><span>${deg}°</span>`;
+            thumbDiv.appendChild(badge);
+        }
+
+        item.appendChild(thumbDiv);
+
+        const meta = document.createElement('div');
+        meta.className = 'photo-meta';
+        const memoText = photo.text ?? photo.memo ?? null;
+        if (memoText) {
+            const memoEl = document.createElement('span');
+            memoEl.textContent = memoText;
+            meta.appendChild(memoEl);
+        }
+        item.appendChild(meta);
+
+        item.addEventListener('click', () => showPhotoViewer(photo, photos, index));
+        grid.appendChild(item);
+    });
+}
+
+/**
+ * 外部写真グリッドを描画（external_photosストア用）
+ * @param {Array} extPhotos
+ * @param {HTMLElement} grid
+ */
+function renderExternalPhotoGrid(extPhotos, grid) {
+    grid.innerHTML = '';
+    if (extPhotos.length === 0) {
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">外部写真がありません</p>';
+        return;
+    }
+    extPhotos.forEach((photo, index) => {
+        const item = document.createElement('div');
+        item.className = 'photo-item';
+
+        const thumbDiv = document.createElement('div');
+        thumbDiv.className = 'photo-thumb';
+
+        const img = document.createElement('img');
+        img.alt = photo.fileName || '外部写真';
+        // BlobをObject URLに変換して表示
+        const objectUrl = URL.createObjectURL(photo.blob);
+        img.src = objectUrl;
+        // 不要になったらObject URLを解放
+        img.onload = () => URL.revokeObjectURL(objectUrl);
+        thumbDiv.appendChild(img);
+        item.appendChild(thumbDiv);
+
+        const meta = document.createElement('div');
+        meta.className = 'photo-meta';
+        const nameEl = document.createElement('span');
+        nameEl.textContent = photo.fileName || '';
+        meta.appendChild(nameEl);
+        item.appendChild(meta);
+
+        item.addEventListener('click', () => showExternalPhotoViewer(photo, extPhotos, index));
+        grid.appendChild(item);
+    });
+}
+
+/**
  * 写真一覧を表示
  */
 export async function showPhotoList() {
@@ -97,73 +197,44 @@ export async function showPhotoList() {
     }
 
     const photoGrid = document.getElementById('photoGrid');
-    photoGrid.innerHTML = '';
+    const externalPhotoGrid = document.getElementById('externalPhotoGrid');
+    const photoTabCount = document.getElementById('photoTabCount');
+    const externalPhotoTabCount = document.getElementById('externalPhotoTabCount');
+    const photoTabBtn = document.getElementById('photoTabBtn');
+    const externalPhotoTabBtn = document.getElementById('externalPhotoTabBtn');
 
     try {
-        const photos = await getAllPhotos();
+        const [photos, extPhotos] = await Promise.all([getAllPhotos(), getAllExternalPhotos()]);
 
-        // Update header with count
-        const headerTitle = document.querySelector('#photoListContainer h2');
-        if (headerTitle) {
-            headerTitle.innerHTML = `Photo Gallery<br>(${photos.length} photo(s))`;
+        // カウント更新
+        if (photoTabCount) photoTabCount.textContent = photos.length;
+        if (externalPhotoTabCount) externalPhotoTabCount.textContent = extPhotos.length;
+
+        renderPhotoGrid(photos, photoGrid);
+        renderExternalPhotoGrid(extPhotos, externalPhotoGrid);
+
+        // タブの初期状態を設定（撮影写真タブをアクティブに）
+        photoGrid.classList.remove('hidden');
+        externalPhotoGrid.classList.add('hidden');
+        if (photoTabBtn) photoTabBtn.classList.add('active');
+        if (externalPhotoTabBtn) externalPhotoTabBtn.classList.remove('active');
+
+        // タブクリックイベント（重複登録防止のためonclickで設定）
+        if (photoTabBtn) {
+            photoTabBtn.onclick = () => {
+                photoGrid.classList.remove('hidden');
+                externalPhotoGrid.classList.add('hidden');
+                photoTabBtn.classList.add('active');
+                if (externalPhotoTabBtn) externalPhotoTabBtn.classList.remove('active');
+            };
         }
-
-        if (photos.length === 0) {
-            photoGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">保存された写真がありません</p>';
-        } else {
-            photos.forEach((photo, index) => {
-                const item = document.createElement('div');
-                item.className = 'photo-item';
-
-                // 正方形サムネール領域
-                const thumbDiv = document.createElement('div');
-                thumbDiv.className = 'photo-thumb';
-
-                const img = document.createElement('img');
-                img.src = photo.data;
-                img.alt = '写真';
-                thumbDiv.appendChild(img);
-
-                const hasDirection = photo.direction !== null && photo.direction !== undefined && photo.direction !== '';
-                if (hasDirection) {
-                    let deg = parseFloat(photo.direction);
-                    if (isNaN(deg)) {
-                        deg = photo.direction === 'left' ? -60 :
-                              photo.direction === 'right' ? 60 : 0;
-                    }
-                    const badge = document.createElement('div');
-                    badge.className = 'photo-direction-badge';
-                    // 角度のテキストも表示できるようにバッジのスタイルを上書き調整
-                    badge.style.width = 'auto';
-                    badge.style.padding = '2px 6px';
-                    badge.style.borderRadius = '12px';
-                    badge.style.gap = '4px';
-                    badge.style.fontSize = '10px';
-                    badge.style.fontWeight = 'bold';
-                    badge.style.color = 'white';
-                    
-                    badge.innerHTML = `<svg viewBox="0 0 14 14" width="12" height="12" style="transform:rotate(${deg}deg)"><path d="M7 2 L11 11 L7 8.5 L3 11 Z" fill="white"/></svg><span>${deg}°</span>`;
-                    thumbDiv.appendChild(badge);
-                }
-
-                item.appendChild(thumbDiv);
-
-                // サムネール下のメタ情報（メモのみ表示）
-                const meta = document.createElement('div');
-                meta.className = 'photo-meta';
-
-                const memoText = photo.text ?? photo.memo ?? null;
-                if (memoText) {
-                    const memoEl = document.createElement('span');
-                    memoEl.textContent = memoText;
-                    meta.appendChild(memoEl);
-                }
-
-                item.appendChild(meta);
-
-                item.addEventListener('click', () => showPhotoViewer(photo, photos, index));
-                photoGrid.appendChild(item);
-            });
+        if (externalPhotoTabBtn) {
+            externalPhotoTabBtn.onclick = () => {
+                photoGrid.classList.add('hidden');
+                externalPhotoGrid.classList.remove('hidden');
+                externalPhotoTabBtn.classList.add('active');
+                if (photoTabBtn) photoTabBtn.classList.remove('active');
+            };
         }
 
         toggleVisibility('photoListContainer', true);
@@ -171,6 +242,51 @@ export async function showPhotoList() {
         console.error('写真一覧表示エラー:', error);
         alert('写真一覧の表示に失敗しました');
     }
+}
+
+/**
+ * 外部写真をビューアで表示（読み取り専用）
+ * @param {Object} photo - external_photosレコード
+ * @param {Array} allPhotos - 外部写真リスト
+ * @param {number} index
+ */
+function showExternalPhotoViewer(photo, allPhotos, index) {
+    // BlobをData URLに変換してから既存ビューアを流用
+    const reader = new FileReader();
+    reader.onload = () => {
+        const dataUrl = reader.result;
+        // ビューア用の疑似photoオブジェクト（data フィールドのみ必要）
+        const viewerPhoto = {
+            data: dataUrl,
+            timestamp: photo.timestamp,
+            text: photo.fileName || null,
+            location: null,
+            _isExternal: true
+        };
+
+        // 外部写真リストも同じ形式に変換（ナビゲーション用）
+        // 簡易実装: インデックスなしで単体表示
+        updatePhotoViewerUI(viewerPhoto, 0, 1);
+
+        // 編集・削除ボタンを非表示にする
+        const editBtn = document.getElementById('viewerEditTextBtn');
+        const deleteBtn = document.getElementById('viewerDeleteBtn');
+        const fwdBtn = document.getElementById('viewerFacingForward');
+        const bwdBtn = document.getElementById('viewerFacingBackward');
+        if (editBtn) editBtn.style.display = 'none';
+        if (deleteBtn) deleteBtn.style.display = 'none';
+        if (fwdBtn) fwdBtn.style.display = 'none';
+        if (bwdBtn) bwdBtn.style.display = 'none';
+
+        toggleVisibility('photoViewer', true);
+
+        const viewerImage = document.getElementById('viewerImage');
+        if (!zoomController && viewerImage) {
+            zoomController = new ImageZoom(viewerImage);
+        }
+        if (zoomController) zoomController.reset();
+    };
+    reader.readAsDataURL(photo.blob);
 }
 
 /**
@@ -198,6 +314,16 @@ export function showPhotoViewer(photo, allPhotos = [], index = -1) {
         currentPhotoList = [photo];
         currentPhotoIndex = 0;
     }
+
+    // 外部写真ビューアで非表示にしたボタンを復元
+    const editBtn = document.getElementById('viewerEditTextBtn');
+    const deleteBtn = document.getElementById('viewerDeleteBtn');
+    const fwdBtn = document.getElementById('viewerFacingForward');
+    const bwdBtn = document.getElementById('viewerFacingBackward');
+    if (editBtn) editBtn.style.display = '';
+    if (deleteBtn) deleteBtn.style.display = '';
+    if (fwdBtn) fwdBtn.style.display = '';
+    if (bwdBtn) bwdBtn.style.display = '';
 
     updatePhotoViewerUI(photo, currentPhotoIndex, currentPhotoList.length);
     toggleVisibility('photoViewer', true);
@@ -298,6 +424,15 @@ function updatePhotoViewerUI(photo, index, total) {
  */
 export async function closePhotoViewer() {
     await _handlePendingEdit();
+    // 外部写真ビューアで非表示にしたボタンを復元
+    const editBtn = document.getElementById('viewerEditTextBtn');
+    const deleteBtn = document.getElementById('viewerDeleteBtn');
+    const fwdBtn = document.getElementById('viewerFacingForward');
+    const bwdBtn = document.getElementById('viewerFacingBackward');
+    if (editBtn) editBtn.style.display = '';
+    if (deleteBtn) deleteBtn.style.display = '';
+    if (fwdBtn) fwdBtn.style.display = '';
+    if (bwdBtn) bwdBtn.style.display = '';
     toggleVisibility('photoViewer', false);
     if (state.isTracking) {
         const totalPoints = state.previousTotalPoints + state.trackingData.length;
