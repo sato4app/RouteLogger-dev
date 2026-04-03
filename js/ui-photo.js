@@ -222,11 +222,35 @@ async function buildExternalPhotoList() {
             const lng = parseFloat(coords[0]);
             const lat = parseFloat(coords[1]);
 
+            // descriptionおよびその他プロパティからGoogle DriveなどのURLを抽出
+            let driveUrl = null;
+            // 1) description内のhref属性を検索
+            const hrefMatches = [...description.matchAll(/href="(https?:\/\/[^"]+)"/gi)];
+            if (hrefMatches.length > 0) {
+                driveUrl = hrefMatches[0][1];
+            }
+            // 2) href がなければテキスト中のURLを検索（imgタグのsrcは除外）
+            if (!driveUrl) {
+                const descNoImg = description.replace(/<img[^>]*>/gi, '');
+                const urlMatch = descNoImg.match(/https?:\/\/[^\s"'<>]+/i);
+                if (urlMatch) driveUrl = urlMatch[0];
+            }
+            // 3) GeoJSONフィーチャーの他プロパティからURLを検索（ExtendedData等）
+            if (!driveUrl) {
+                for (const val of Object.values(props)) {
+                    if (typeof val === 'string' && /^https?:\/\//i.test(val)) {
+                        driveUrl = val;
+                        break;
+                    }
+                }
+            }
+
             displayList.push({
                 ...photoRecord,
                 thumbBlob: thumbRecord ? thumbRecord.blob : null,
                 location: (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) ? { lat, lng } : null,
-                name: props.name || photoRecord.fileName
+                name: props.name || photoRecord.fileName,
+                driveUrl
             });
         }
     }
@@ -276,6 +300,18 @@ function renderExternalPhotoGrid(extPhotoList, grid) {
         const nameEl = document.createElement('span');
         nameEl.textContent = photo.name || '';
         meta.appendChild(nameEl);
+
+        if (photo.driveUrl) {
+            const link = document.createElement('a');
+            link.href = photo.driveUrl;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.textContent = '元の写真を表示';
+            link.className = 'ext-photo-link';
+            link.addEventListener('click', e => e.stopPropagation());
+            meta.appendChild(link);
+        }
+
         item.appendChild(meta);
 
         item.addEventListener('click', () => showExternalPhotoViewer(photo, extPhotoList, index));

@@ -624,6 +624,15 @@ body {
     flex-direction: column;
 }
 
+.ext-photo-link {
+    display: inline-block;
+    margin-top: 3px;
+    font-size: 10px;
+    color: var(--accent, #007aff);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 /* Photo Viewer */
 .dark-mode {
     background: #000;
