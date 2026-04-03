@@ -1,7 +1,7 @@
 // RouteLogger - 写真関連UI
 
 import * as state from './state.js';
-import { getAllPhotos, updatePhoto, deletePhoto, getAllExternalPhotos, getAllExternalData } from './db.js';
+import { getAllPhotos, updatePhoto, deletePhoto, getAllExternalPhotos, getAllExternalData, saveExternalPhoto, getExternalPhoto } from './db.js';
 import { removePhotoMarker } from './map.js';
 import { toggleVisibility, updateStatus } from './ui-common.js';
 
@@ -303,12 +303,14 @@ function renderExternalPhotoGrid(extPhotoList, grid) {
 
         if (photo.driveUrl) {
             const link = document.createElement('a');
-            link.href = photo.driveUrl;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
+            link.href = '#';
             link.textContent = '元の写真を表示';
             link.className = 'ext-photo-link';
-            link.addEventListener('click', e => e.stopPropagation());
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                e.stopPropagation();
+                showDrivePhotoPopup(photo.driveUrl);
+            });
             meta.appendChild(link);
         }
 
@@ -425,6 +427,92 @@ function showExternalPhotoViewer(photo, allPhotos, index) {
         if (zoomController) zoomController.reset();
     };
     reader.readAsDataURL(photo.blob);
+}
+
+/**
+ * Google Drive URLからファイルIDを抽出
+ * @param {string} url
+ * @returns {string|null}
+ */
+function extractDriveFileId(url) {
+    // https://drive.google.com/file/d/FILE_ID/view
+    const fileMatch = url.match(/\/file\/d\/([^\/\?#]+)/);
+    if (fileMatch) return fileMatch[1];
+    // https://drive.google.com/open?id=FILE_ID
+    // https://drive.google.com/uc?id=FILE_ID
+    const idMatch = url.match(/[?&]id=([^&]+)/);
+    if (idMatch) return idMatch[1];
+    return null;
+}
+
+/**
+ * Google Drive URLの写真をダウンロードしてポップアップ表示
+ * IndexedDBにキャッシュ済みの場合はキャッシュから表示する
+ * @param {string} driveUrl - Google Drive URL
+ */
+async function showDrivePhotoPopup(driveUrl) {
+    const lightbox = document.getElementById('photoLightbox');
+    const img = document.getElementById('photoLightboxImg');
+    const iframe = document.getElementById('photoLightboxIframe');
+    if (!lightbox || !img) return;
+
+    // iframeを非表示にしてimgを表示状態にする
+    if (iframe) iframe.classList.add('hidden');
+    img.src = '';
+    img.alt = '読み込み中...';
+    img.style.opacity = '0.5';
+    lightbox.classList.remove('hidden');
+
+    const fileId = extractDriveFileId(driveUrl);
+    const DRIVE_CACHE_ID = 'drive_cache';
+
+    // IndexedDBキャッシュを確認
+    if (fileId && state.db) {
+        try {
+            const cachedBlob = await getExternalPhoto(DRIVE_CACHE_ID, fileId);
+            if (cachedBlob) {
+                const objectUrl = URL.createObjectURL(cachedBlob);
+                img.onload = () => { img.style.opacity = '1'; };
+                img.src = objectUrl;
+                return;
+            }
+        } catch (e) { /* キャッシュなし、続行 */ }
+    }
+
+    // Google Driveの直接表示URLを構築
+    const directUrl = fileId
+        ? `https://drive.google.com/uc?export=view&id=${fileId}`
+        : driveUrl;
+
+    // fetchでダウンロードを試みる（CORSヘッダーがある場合はIndexedDBに保存）
+    let downloaded = false;
+    try {
+        const response = await fetch(directUrl, { mode: 'cors' });
+        if (response.ok) {
+            const blob = await response.blob();
+            if (fileId && state.db) {
+                try {
+                    await saveExternalPhoto(DRIVE_CACHE_ID, fileId, blob);
+                } catch (e) { /* 保存失敗は無視して表示は続行 */ }
+            }
+            const objectUrl = URL.createObjectURL(blob);
+            img.onload = () => { img.style.opacity = '1'; };
+            img.src = objectUrl;
+            downloaded = true;
+        }
+    } catch (e) {
+        // CORS制限などでfetch失敗 → imgタグでの直接表示にフォールバック
+    }
+
+    if (!downloaded) {
+        // imgタグは別オリジンの画像をCORSなしで表示できる
+        img.onload = () => { img.style.opacity = '1'; };
+        img.onerror = () => {
+            img.alt = '画像を読み込めませんでした';
+            img.style.opacity = '1';
+        };
+        img.src = directUrl;
+    }
 }
 
 /**
