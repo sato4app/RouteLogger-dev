@@ -456,15 +456,33 @@ async function showDrivePhotoPopup(driveUrl) {
     const iframe = document.getElementById('photoLightboxIframe');
     if (!lightbox || !img) return;
 
-    // iframeを非表示にしてimgを表示状態にする
-    if (iframe) iframe.classList.add('hidden');
+    // 初期化：iframeを隠し、imgを表示して読み込み中を示す
+    if (iframe) { iframe.classList.add('hidden'); iframe.src = ''; }
+    img.style.display = '';
+    img.style.opacity = '0.5';
     img.src = '';
     img.alt = '読み込み中...';
-    img.style.opacity = '0.5';
     lightbox.classList.remove('hidden');
 
     const fileId = extractDriveFileId(driveUrl);
     const DRIVE_CACHE_ID = 'drive_cache';
+
+    // iframeフォールバック用URL（Google Drive埋め込みプレビュー）
+    const previewUrl = fileId
+        ? `https://drive.google.com/file/d/${fileId}/preview`
+        : null;
+
+    // iframeで表示する処理
+    const showInIframe = () => {
+        if (!previewUrl || !iframe) {
+            img.alt = '画像を読み込めませんでした';
+            img.style.opacity = '1';
+            return;
+        }
+        img.style.display = 'none';
+        iframe.classList.remove('hidden');
+        iframe.src = previewUrl;
+    };
 
     // IndexedDBキャッシュを確認
     if (fileId && state.db) {
@@ -473,46 +491,31 @@ async function showDrivePhotoPopup(driveUrl) {
             if (cachedBlob) {
                 const objectUrl = URL.createObjectURL(cachedBlob);
                 img.onload = () => { img.style.opacity = '1'; };
+                img.onerror = showInIframe;
                 img.src = objectUrl;
                 return;
             }
         } catch (e) { /* キャッシュなし、続行 */ }
     }
 
-    // Google Driveの直接表示URLを構築
-    const directUrl = fileId
-        ? `https://drive.google.com/uc?export=view&id=${fileId}`
+    // Google Drive CDN URLで直接表示を試みる（lh3はimgタグで認証なし表示できる場合がある）
+    // 失敗した場合はiframeプレビューにフォールバック
+    const cdnUrl = fileId
+        ? `https://lh3.googleusercontent.com/d/${fileId}`
         : driveUrl;
 
-    // fetchでダウンロードを試みる（CORSヘッダーがある場合はIndexedDBに保存）
-    let downloaded = false;
-    try {
-        const response = await fetch(directUrl, { mode: 'cors' });
-        if (response.ok) {
-            const blob = await response.blob();
-            if (fileId && state.db) {
-                try {
-                    await saveExternalPhoto(DRIVE_CACHE_ID, fileId, blob);
-                } catch (e) { /* 保存失敗は無視して表示は続行 */ }
-            }
-            const objectUrl = URL.createObjectURL(blob);
-            img.onload = () => { img.style.opacity = '1'; };
-            img.src = objectUrl;
-            downloaded = true;
+    img.onload = () => {
+        img.style.opacity = '1';
+        // 表示成功時にバックグラウンドでIndexedDBへキャッシュ保存
+        if (fileId && state.db) {
+            fetch(cdnUrl, { mode: 'cors' })
+                .then(r => r.ok ? r.blob() : null)
+                .then(blob => { if (blob) saveExternalPhoto(DRIVE_CACHE_ID, fileId, blob).catch(() => {}); })
+                .catch(() => {});
         }
-    } catch (e) {
-        // CORS制限などでfetch失敗 → imgタグでの直接表示にフォールバック
-    }
-
-    if (!downloaded) {
-        // imgタグは別オリジンの画像をCORSなしで表示できる
-        img.onload = () => { img.style.opacity = '1'; };
-        img.onerror = () => {
-            img.alt = '画像を読み込めませんでした';
-            img.style.opacity = '1';
-        };
-        img.src = directUrl;
-    }
+    };
+    img.onerror = showInIframe;
+    img.src = cdnUrl;
 }
 
 /**
