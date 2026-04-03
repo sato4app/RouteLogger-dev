@@ -249,7 +249,7 @@ async function buildExternalPhotoList() {
                 ...photoRecord,
                 thumbBlob: thumbRecord ? thumbRecord.blob : null,
                 location: (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) ? { lat, lng } : null,
-                name: props.name || photoRecord.fileName,
+                name: photoRecord.fileName || props.name,
                 driveUrl
             });
         }
@@ -395,7 +395,7 @@ function showExternalPhotoViewer(photo, allPhotos, index) {
         const viewerPhoto = {
             data: imageData,
             timestamp: photo.timestamp,
-            text: photo.name || photo.fileName || null,
+            text: photo.text || photo.memo || null,
             location: photo.location || null,
             _isExternal: true
         };
