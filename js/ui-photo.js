@@ -390,22 +390,16 @@ function showExternalPhotoViewer(photo, allPhotos, index) {
         console.error('外部写真のデータが見つかりません:', photo);
         return;
     }
-    // BlobをData URLに変換してから既存ビューアを流用
-    const reader = new FileReader();
-    reader.onerror = () => console.error('外部写真の読み込みに失敗しました');
-    reader.onload = () => {
-        const dataUrl = reader.result;
-        // ビューア用の疑似photoオブジェクト（data フィールドのみ必要）
+
+    const showInViewer = (imageData) => {
         const viewerPhoto = {
-            data: dataUrl,
+            data: imageData,
             timestamp: photo.timestamp,
             text: photo.name || photo.fileName || null,
             location: photo.location || null,
             _isExternal: true
         };
 
-        // 外部写真リストも同じ形式に変換（ナビゲーション用）
-        // 簡易実装: インデックスなしで単体表示
         updatePhotoViewerUI(viewerPhoto, 0, 1);
 
         // 編集・削除ボタンを非表示にする
@@ -426,6 +420,33 @@ function showExternalPhotoViewer(photo, allPhotos, index) {
         }
         if (zoomController) zoomController.reset();
     };
+
+    // driveUrlがある場合は元の写真（Google Drive画像）をビューアに表示する
+    if (photo.driveUrl) {
+        const fileId = extractDriveFileId(photo.driveUrl);
+        const cdnUrl = fileId
+            ? `https://lh3.googleusercontent.com/d/${fileId}`
+            : photo.driveUrl;
+
+        showInViewer(cdnUrl);
+
+        // Drive画像の読み込み失敗時はblobで代替表示
+        const viewerImage = document.getElementById('viewerImage');
+        if (viewerImage) {
+            viewerImage.onerror = () => {
+                viewerImage.onerror = null;
+                const reader = new FileReader();
+                reader.onload = () => { viewerImage.src = reader.result; };
+                reader.readAsDataURL(photo.blob);
+            };
+        }
+        return;
+    }
+
+    // driveUrlがない場合は従来通りblobをData URLに変換して表示
+    const reader = new FileReader();
+    reader.onerror = () => console.error('外部写真の読み込みに失敗しました');
+    reader.onload = () => { showInViewer(reader.result); };
     reader.readAsDataURL(photo.blob);
 }
 
