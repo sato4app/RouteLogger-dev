@@ -620,18 +620,6 @@ function updatePhotoViewerUI(photo, index, total) {
 
     photoInfo.innerHTML = infoHTML;
 
-    // 撮影方向（Forward/Backwardボタンの上に表示）
-    const compassEl = document.getElementById('photoCompassInfo');
-    if (compassEl) {
-        if (photo.compassDirection != null || photo.compassHeading != null) {
-            const dir = photo.compassDirection ?? '';
-            const deg = photo.compassHeading != null ? `（${photo.compassHeading}°）` : '';
-            compassEl.textContent = `${dir}${deg}`;
-        } else {
-            compassEl.textContent = '';
-        }
-    }
-
     // Facing ボタンのアクティブ状態を更新
     const fwdBtn = document.getElementById('viewerFacingForward');
     const bwdBtn = document.getElementById('viewerFacingBackward');
