@@ -406,6 +406,8 @@ body {
     background: white;
     width: 90%;
     max-width: 360px;
+    max-height: 90vh;
+    overflow-y: auto;
     border-radius: var(--radius-lg);
     padding: 24px;
     box-shadow: var(--shadow-md);
