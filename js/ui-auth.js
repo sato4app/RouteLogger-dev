@@ -2,6 +2,21 @@
 
 import { signInAnonymously, getUserByUsername, registerUser } from './auth.js';
 
+/**
+ * emailの全角文字を半角に変換する
+ * 対象: 全角英数字、＠、－、．、＿
+ * @param {string} email
+ * @returns {string}
+ */
+function normalizeEmail(email) {
+    return email
+        .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+        .replace(/＠/g, '@')
+        .replace(/－/g, '-')
+        .replace(/．/g, '.')
+        .replace(/＿/g, '_');
+}
+
 const USERNAME_KEY = 'routeLogger_username';
 const EMAIL_KEY = 'routeLogger_email';
 const DISPLAY_NAME_KEY = 'routeLogger_displayName';
@@ -47,6 +62,12 @@ export async function checkAndUpdateUserStatus() {
  * 認証UIのイベントリスナーを初期化
  */
 export function initAuthUI() {
+    // email入力: 全角を即時に半角へ変換
+    document.getElementById('registerEmailInput')?.addEventListener('input', function () {
+        const normalized = normalizeEmail(this.value);
+        if (this.value !== normalized) this.value = normalized;
+    });
+
     // ユーザー名入力: 半角英数字以外を即時除去（全角・記号の入力を防ぐ）
     document.getElementById('registerUsernameInput')?.addEventListener('input', function () {
         const pos = this.selectionStart;
@@ -86,7 +107,7 @@ export function initAuthUI() {
     // [OK] ボタン: 既存ユーザーならlocalStorage更新、新規ユーザーならFirestore登録
     document.getElementById('userEditSaveBtn')?.addEventListener('click', async () => {
         const username = document.getElementById('registerUsernameInput')?.value?.trim();
-        const email = document.getElementById('registerEmailInput')?.value?.trim();
+        const email = normalizeEmail(document.getElementById('registerEmailInput')?.value?.trim() ?? '');
         const displayName = document.getElementById('registerDisplayNameInput')?.value?.trim();
         const msg = document.getElementById('userEditMsg');
         if (msg) msg.textContent = '';
@@ -108,6 +129,14 @@ export function initAuthUI() {
                 // 既存ユーザー
                 if (userInfo.status === 'denied' || userInfo.status === 'disabled') {
                     if (msg) msg.textContent = 'このユーザーは無効化されています';
+                    return;
+                }
+                if (email && userInfo.email && email !== userInfo.email) {
+                    if (msg) msg.textContent = 'メールアドレスが登録済みの情報と一致しません';
+                    return;
+                }
+                if (displayName && userInfo.displayName && displayName !== userInfo.displayName) {
+                    if (msg) msg.textContent = '氏名が登録済みの情報と一致しません';
                     return;
                 }
                 localStorage.setItem(USERNAME_KEY, username);
