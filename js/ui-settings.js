@@ -273,33 +273,109 @@ export function initSettings() {
     if (imageSettingsCancelBtn)  imageSettingsCancelBtn.addEventListener('click', closeImageSettingsPanel);
 
     // ── 過去データDrive移行 ──────────────────────────────────────────────────────
-    const migrateToDriveBtn = document.getElementById('migrateToDriveBtn');
-    if (migrateToDriveBtn) {
-        migrateToDriveBtn.addEventListener('click', async () => {
-            const nameInput = document.getElementById('migrateNameInput')?.value?.trim();
-            const mode = document.querySelector('input[name="migrateMode"]:checked')?.value;
-            const msg = document.getElementById('migrateToDriveMsg');
-            if (!nameInput) { if (msg) msg.textContent = 'routelog名を入力してください'; return; }
+    let _migrateListLoaded = false;
 
-            if (msg) msg.textContent = '実行中...';
-            migrateToDriveBtn.disabled = true;
-            try {
-                const param = mode === 'prefix' ? { prefix: nameInput } : { projectName: nameInput };
-                const fn = firebase.functions().httpsCallable('migrateRoutesToDrive');
-                const result = await fn(param);
-                const results = result.data.results || [];
-                if (results.length === 0) {
-                    if (msg) msg.textContent = '対象のroutelogが見つかりませんでした';
-                } else {
-                    const ok  = results.filter(r => r.success).length;
-                    const ng  = results.filter(r => !r.success).length;
-                    if (msg) msg.textContent = `完了: 成功 ${ok}件${ng > 0 ? `、失敗 ${ng}件` : ''}`;
+    function _renderMigrateList(names) {
+        const listEl = document.getElementById('migrateList');
+        if (!listEl) return;
+        if (names.length === 0) {
+            listEl.innerHTML = '<span style="font-size:0.8em;color:#888;">該当なし</span>';
+            return;
+        }
+        listEl.innerHTML = names.map(name =>
+            `<label style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:0.85em;cursor:pointer;">` +
+            `<input type="checkbox" class="migrate-check" value="${name}">` +
+            `<span>${name}</span></label>`
+        ).join('');
+    }
+
+    async function _loadMigrateList(prefix = '') {
+        const listEl = document.getElementById('migrateList');
+        const msg = document.getElementById('migrateToDriveMsg');
+        if (!listEl) return;
+        listEl.innerHTML = '<span style="font-size:0.8em;color:#888;">読み込み中...</span>';
+        if (msg) msg.textContent = '';
+        try {
+            const snapshot = await firebase.firestore().collection('tracks')
+                .orderBy(firebase.firestore.FieldPath.documentId())
+                .get();
+            let names = snapshot.docs.map(d => d.id);
+            if (prefix) names = names.filter(n => n.startsWith(prefix));
+            _renderMigrateList(names);
+        } catch (e) {
+            listEl.innerHTML = '';
+            if (msg) msg.textContent = `読み込みエラー: ${e.message}`;
+        }
+    }
+
+    const migrateToggleBtn   = document.getElementById('migrateToggleBtn');
+    const migrateSearchBtn   = document.getElementById('migrateSearchBtn');
+    const migrateSelectAllBtn = document.getElementById('migrateSelectAllBtn');
+    const migrateExecBtn     = document.getElementById('migrateExecBtn');
+
+    if (migrateToggleBtn) {
+        migrateToggleBtn.addEventListener('click', async () => {
+            const panel = document.getElementById('migratePanel');
+            if (!panel) return;
+            const isOpen = !panel.classList.contains('hidden');
+            if (isOpen) {
+                panel.classList.add('hidden');
+                migrateToggleBtn.textContent = '▶';
+            } else {
+                panel.classList.remove('hidden');
+                migrateToggleBtn.textContent = '▼';
+                if (!_migrateListLoaded) {
+                    await _loadMigrateList();
+                    _migrateListLoaded = true;
                 }
-            } catch (e) {
-                if (msg) msg.textContent = `エラー: ${e.message}`;
-            } finally {
-                migrateToDriveBtn.disabled = false;
             }
+        });
+    }
+
+    if (migrateSearchBtn) {
+        migrateSearchBtn.addEventListener('click', async () => {
+            const prefix = document.getElementById('migratePrefixInput')?.value?.trim() ?? '';
+            await _loadMigrateList(prefix);
+        });
+    }
+
+    document.getElementById('migratePrefixInput')?.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            const prefix = e.target.value.trim();
+            await _loadMigrateList(prefix);
+        }
+    });
+
+    if (migrateSelectAllBtn) {
+        migrateSelectAllBtn.addEventListener('click', () => {
+            const checks = document.querySelectorAll('.migrate-check');
+            const allChecked = [...checks].every(c => c.checked);
+            checks.forEach(c => c.checked = !allChecked);
+            migrateSelectAllBtn.textContent = allChecked ? '全選択' : '全解除';
+        });
+    }
+
+    if (migrateExecBtn) {
+        migrateExecBtn.addEventListener('click', async () => {
+            const msg = document.getElementById('migrateToDriveMsg');
+            const selected = [...document.querySelectorAll('.migrate-check:checked')].map(c => c.value);
+            if (selected.length === 0) { if (msg) msg.textContent = 'routelogを選択してください'; return; }
+
+            migrateExecBtn.disabled = true;
+            const fn = firebase.functions().httpsCallable('migrateRoutesToDrive');
+            let ok = 0, ng = 0;
+            for (let i = 0; i < selected.length; i++) {
+                if (msg) msg.textContent = `実行中... (${i + 1}/${selected.length})`;
+                try {
+                    await fn({ projectName: selected[i] });
+                    ok++;
+                } catch (e) {
+                    ng++;
+                    console.warn(`${selected[i]} 移行失敗:`, e.message);
+                }
+            }
+            if (msg) msg.textContent = `完了: 成功 ${ok}件${ng > 0 ? `、失敗 ${ng}件` : ''}`;
+            migrateExecBtn.disabled = false;
         });
     }
 
