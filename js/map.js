@@ -361,8 +361,8 @@ export function displayExternalGeoJSON(geoJson) {
             pointToLayer: function (feature, latlng) {
                 return L.circleMarker(latlng, {
                     radius: 8,
-                    fillColor: "#00BFFF",
-                    color: "#00BFFF",
+                    fillColor: "#4682b4",
+                    color: "#4682b4",
                     weight: 2,
                     opacity: 1,
                     fillOpacity: 0.8
@@ -370,7 +370,7 @@ export function displayExternalGeoJSON(geoJson) {
             },
             style: function (feature) {
                 return {
-                    color: '#00BFFF',
+                    color: '#4682b4',
                     weight: 4,
                     opacity: 0.7,
                     fillOpacity: 0.2
@@ -460,7 +460,7 @@ export function displayExternalGeoJSON(geoJson) {
         state.addExternalLayer(layer);
 
         // トラックの開始・終了マーカーを追加
-        const trackColor = '#00BFFF';
+        const trackColor = '#4682b4';
         let allTrackPoints = [];
         geoJson.features.forEach(feature => {
             if (!feature.geometry) return;

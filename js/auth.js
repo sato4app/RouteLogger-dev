@@ -56,6 +56,19 @@ export async function registerUser(username, email, displayName) {
 }
 
 /**
+ * displayNameを更新
+ * @param {string} username
+ * @param {string} displayName
+ */
+export async function updateDisplayName(username, displayName) {
+    const db = firebase.firestore();
+    await db.collection(COLLECTION).doc(username).update({
+        displayName,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+}
+
+/**
  * lastLoginAtを更新
  * @param {string} username
  */

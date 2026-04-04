@@ -1,6 +1,6 @@
 // RouteLogger - ユーザー接続UI（設定ダイアログ内）
 
-import { signInAnonymously, getUserByUsername, registerUser } from './auth.js';
+import { signInAnonymously, getUserByUsername, registerUser, updateDisplayName } from './auth.js';
 
 /**
  * emailの全角文字を半角に変換する
@@ -135,9 +135,9 @@ export function initAuthUI() {
                     if (msg) msg.textContent = 'メールアドレスが登録済みの情報と一致しません';
                     return;
                 }
-                if (displayName && userInfo.displayName && displayName !== userInfo.displayName) {
-                    if (msg) msg.textContent = '氏名が登録済みの情報と一致しません';
-                    return;
+                // usernameとemailが一致 → displaynameが異なればFirestoreを更新
+                if (displayName && displayName !== userInfo.displayName) {
+                    await updateDisplayName(username, displayName);
                 }
                 localStorage.setItem(USERNAME_KEY, username);
                 if (email) localStorage.setItem(EMAIL_KEY, email);
