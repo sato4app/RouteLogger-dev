@@ -447,6 +447,15 @@ function setupEventListeners() {
     // ページ可視性変化
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // ポケット内でのシェイクによるiOS「入力キャンセル」ダイアログを防止
+    // 画面がロック/アンロックされる際、フォーカス中のテキスト入力をblurしてundoヒストリを消去する
+    document.addEventListener('visibilitychange', () => {
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+            active.blur();
+        }
+    });
+
     // デバイス方角センサー
     setupDeviceOrientation();
 
