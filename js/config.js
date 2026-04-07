@@ -31,7 +31,7 @@ export const DEFAULT_PHOTO_QUALITY = 70;          // 70%
 export const DEFAULT_THUMBNAIL_SIZE = 160;        // 160px
 
 // 画像設定パスワード
-export const SETTINGS_PASSWORD = '1234';
+export const SETTINGS_PASSWORD = 'satos03';
 
 // 地図タイル設定
 export const GSI_TILE_URL = 'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png';
