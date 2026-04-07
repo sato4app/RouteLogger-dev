@@ -275,10 +275,8 @@ body {
 /* Data Panel Layout */
 #dataPanel {
     flex-direction: column;
-    /* Ensure column layout for rows */
     align-items: stretch;
-    padding: 12px;
-    /* Restore padding */
+    padding: 0;
 }
 
 .data-row {
