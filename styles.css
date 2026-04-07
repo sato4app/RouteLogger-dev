@@ -1108,14 +1108,11 @@ body {
 
 /* Clock Display */
 #clockDisplay {
-    position: absolute;
+    position: fixed;
     top: auto;
     bottom: calc(env(safe-area-inset-bottom, 30px) + 154px);
-    /* clearBtn上に配置: safe-area分だけclearBtnと同じだけシフト */
     left: 50%;
     transform: translateX(-50%);
-    margin-left: -136px;
-    /* Offset for first column */
     z-index: 900;
     font-size: 20px;
     font-weight: 700;

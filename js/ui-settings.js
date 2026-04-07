@@ -8,13 +8,25 @@ import { checkAndUpdateUserStatus } from './ui-auth.js';
 let clockInterval = null;
 
 /**
+ * 時計をclearBtnの横位置に合わせる
+ */
+function alignClockToClearBtn() {
+    const clockDisplay = document.getElementById('clockDisplay');
+    const clearBtn = document.getElementById('clearBtn');
+    if (!clockDisplay || !clearBtn) return;
+    const rect = clearBtn.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    clockDisplay.style.left = centerX + 'px';
+}
+
+/**
  * 時計表示の初期化
  */
 export function initClock() {
     updateClock();
+    alignClockToClearBtn();
+    window.addEventListener('resize', alignClockToClearBtn);
 
-    // 1秒ごとに更新して秒まで正確に、あるいは分が変わるタイミングを逃さないようにする
-    // 今回はHH:mm表示なので、1秒間隔でチェックしても負荷は低い
     clockInterval = setInterval(updateClock, 1000);
 }
 
