@@ -244,6 +244,12 @@ body {
     background: #30B0C7;
 }
 
+.clear-icon {
+    background: var(--bg-glass);
+    color: var(--text-sub);
+    box-shadow: none;
+}
+
 .save-icon {
     background: var(--primary-color);
 }
