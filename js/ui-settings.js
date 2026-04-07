@@ -5,16 +5,15 @@ import { DEFAULT_PHOTO_RESOLUTION_LEVEL, DEFAULT_PHOTO_QUALITY, DEFAULT_THUMBNAI
 import { toggleVisibility } from './ui-common.js';
 import { checkAndUpdateUserStatus } from './ui-auth.js';
 
-let clockInterval = null;
 
 /**
  * 時計をclearBtnの横位置に合わせる
  */
 function alignClockToClearBtn() {
     const clockDisplay = document.getElementById('clockDisplay');
-    const clearBtn = document.getElementById('clearBtn');
-    if (!clockDisplay || !clearBtn) return;
-    const rect = clearBtn.getBoundingClientRect();
+    const startBtn = document.getElementById('startBtn');
+    if (!clockDisplay || !startBtn) return;
+    const rect = startBtn.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     clockDisplay.style.left = centerX + 'px';
 }
@@ -27,7 +26,7 @@ export function initClock() {
     alignClockToClearBtn();
     window.addEventListener('resize', alignClockToClearBtn);
 
-    clockInterval = setInterval(updateClock, 1000);
+    setInterval(updateClock, 1000);
 }
 
 /**
