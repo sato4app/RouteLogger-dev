@@ -87,7 +87,7 @@ body {
 /* Panels (Controls & Data) */
 .panel {
     position: absolute;
-    bottom: calc(env(safe-area-inset-bottom, 30px) + 5px);
+    bottom: 8px;
     left: 12px;
     right: 12px;
     display: flex;
@@ -121,14 +121,15 @@ body {
 
 #controls {
     padding: 12px 16px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
     justify-content: space-between;
 }
 
 #dataPanel {
     position: absolute;
     /* Was in .panel */
-    bottom: calc(env(safe-area-inset-bottom, 30px) + 112px);
-    /* Controls height ~100px + 12px gap */
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 105px);
+    /* 8px(panel bottom) + 87px(controls content) + 10px(gap) */
     /* Position above controls */
     left: 12px;
     right: 12px;
@@ -1110,7 +1111,7 @@ body {
 #clockDisplay {
     position: fixed;
     top: auto;
-    bottom: calc(env(safe-area-inset-bottom, 30px) + 154px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 105px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 900;
