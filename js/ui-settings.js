@@ -1,7 +1,7 @@
 // RouteLogger - Settings & Clock UI
 
 import * as state from './state.js';
-import { DEFAULT_PHOTO_RESOLUTION_LEVEL, DEFAULT_PHOTO_QUALITY, DEFAULT_THUMBNAIL_SIZE } from './config.js';
+import { DEFAULT_PHOTO_RESOLUTION_LEVEL, DEFAULT_PHOTO_QUALITY, DEFAULT_THUMBNAIL_SIZE, HIDDEN_SETTINGS_TAP_COUNT, HIDDEN_SETTINGS_TAP_SEC } from './config.js';
 import { toggleVisibility } from './ui-common.js';
 import { checkAndUpdateUserStatus } from './ui-auth.js';
 
@@ -115,6 +115,9 @@ export function showSettingsDialog() {
  * 設定ダイアログを閉じる
  */
 export function closeSettingsDialog() {
+    // 画面設定等を非表示に戻す
+    const advSection = document.getElementById('advancedSettingsSection');
+    if (advSection) advSection.classList.add('hidden');
     toggleVisibility('settingsDialog', false);
 }
 
@@ -138,6 +141,23 @@ export function initSettings() {
     const closeBtn = document.getElementById('closeSettingsBtn');
     if (closeBtn) {
         closeBtn.addEventListener('click', closeSettingsDialog);
+    }
+
+    // アプリバージョン表示を連続タップで「画面設定等」を表示
+    const appVersionDisplay = document.getElementById('appVersionDisplay');
+    if (appVersionDisplay) {
+        let _tapTimestamps = [];
+        appVersionDisplay.addEventListener('click', () => {
+            const now = Date.now();
+            _tapTimestamps.push(now);
+            // 判定ウィンドウ外のタップを除去
+            _tapTimestamps = _tapTimestamps.filter(t => now - t <= HIDDEN_SETTINGS_TAP_SEC * 1000);
+            if (_tapTimestamps.length >= HIDDEN_SETTINGS_TAP_COUNT) {
+                _tapTimestamps = [];
+                const advSection = document.getElementById('advancedSettingsSection');
+                if (advSection) advSection.classList.remove('hidden');
+            }
+        });
     }
 
     // Load saved settings
@@ -302,9 +322,18 @@ export function initSettings() {
             openImageSettingsPanel();
         });
     }
-    if (imageSettingsSaveBtn) imageSettingsSaveBtn.addEventListener('click', () => { applyImageSettings(); closeImageSettingsPanel(); });
+    if (imageSettingsSaveBtn) imageSettingsSaveBtn.addEventListener('click', () => {
+        applyImageSettings();
+        closeImageSettingsPanel();
+        const advSection = document.getElementById('advancedSettingsSection');
+        if (advSection) advSection.classList.add('hidden');
+    });
     if (imageSettingsDefaultBtn) imageSettingsDefaultBtn.addEventListener('click', resetToDefaults);
-    if (imageSettingsCancelBtn)  imageSettingsCancelBtn.addEventListener('click', closeImageSettingsPanel);
+    if (imageSettingsCancelBtn)  imageSettingsCancelBtn.addEventListener('click', () => {
+        closeImageSettingsPanel();
+        const advSection = document.getElementById('advancedSettingsSection');
+        if (advSection) advSection.classList.add('hidden');
+    });
 
     // ── 過去データDrive移行 ──────────────────────────────────────────────────────
     let _migrateListLoaded = false;
