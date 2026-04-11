@@ -143,11 +143,11 @@ export function initSettings() {
         closeBtn.addEventListener('click', closeSettingsDialog);
     }
 
-    // アプリバージョン表示を連続タップで「画面設定等」を表示
-    const appVersionDisplay = document.getElementById('appVersionDisplay');
-    if (appVersionDisplay) {
+    // アプリバージョンのラベル部分を連続タップで「画面設定等」を表示
+    const appVersionLabel = document.getElementById('appVersionLabel');
+    if (appVersionLabel) {
         let _tapTimestamps = [];
-        appVersionDisplay.addEventListener('click', () => {
+        appVersionLabel.addEventListener('click', () => {
             const now = Date.now();
             _tapTimestamps.push(now);
             // 判定ウィンドウ外のタップを除去
@@ -156,6 +156,7 @@ export function initSettings() {
                 _tapTimestamps = [];
                 const advSection = document.getElementById('advancedSettingsSection');
                 if (advSection) advSection.classList.remove('hidden');
+                openImageSettingsPanel();
             }
         });
     }
@@ -299,29 +300,10 @@ export function initSettings() {
         if (thumbnailSizeInput)    thumbnailSizeInput.value  = DEFAULT_THUMBNAIL_SIZE;
     }
 
-    const imageSettingsBtn     = document.getElementById('imageSettingsBtn');
     const imageSettingsSaveBtn = document.getElementById('imageSettingsSaveBtn');
     const imageSettingsDefaultBtn = document.getElementById('imageSettingsDefaultBtn');
     const imageSettingsCancelBtn  = document.getElementById('imageSettingsCancelBtn');
 
-    if (imageSettingsBtn) {
-        imageSettingsBtn.addEventListener('click', async () => {
-            const input = window.prompt('設定用パスワードを入力してください');
-            if (input === null) return; // キャンセル
-            try {
-                const doc = await firebase.firestore().collection('userAdmin').doc('root').get();
-                const correctPassword = doc.exists ? doc.data().password : null;
-                if (!correctPassword || input !== correctPassword) {
-                    alert('パスワードが違います');
-                    return;
-                }
-            } catch (e) {
-                alert('パスワードの確認に失敗しました');
-                return;
-            }
-            openImageSettingsPanel();
-        });
-    }
     if (imageSettingsSaveBtn) imageSettingsSaveBtn.addEventListener('click', () => {
         applyImageSettings();
         closeImageSettingsPanel();
