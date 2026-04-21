@@ -78,6 +78,9 @@ export function setIsShowFacingButtons(value) { isShowFacingButtons = value; }
 export let isMinooEmergencyEnabled = true;
 export function setIsMinooEmergencyEnabled(value) { isMinooEmergencyEnabled = value; }
 
+export let isMinooHikingRouteEnabled = false;
+export function setIsMinooHikingRouteEnabled(value) { isMinooHikingRouteEnabled = value; }
+
 // 写真解像度: 0=720x1280, 1=360x640, 2=180x320
 export let photoResolutionLevel = 1;
 export function setPhotoResolutionLevel(value) { photoResolutionLevel = value; }
@@ -115,6 +118,11 @@ export let officialMarkers = [];
 export function setOfficialMarkers(value) { officialMarkers = value; }
 export function addOfficialMarker(marker) { officialMarkers.push(marker); }
 export function clearOfficialMarkers() { officialMarkers = []; }
+
+// Hiking Route Layers (ルート+スポット)
+export let hikingRouteLayers = [];
+export function addHikingRouteLayer(layer) { hikingRouteLayers.push(layer); }
+export function clearHikingRouteLayers() { hikingRouteLayers = []; }
 
 // External Layers
 export function addExternalLayer(layer) { externalLayers.push(layer); }

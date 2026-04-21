@@ -92,6 +92,11 @@ export function showSettingsDialog() {
         minooEmergencyToggle.checked = state.isMinooEmergencyEnabled;
     }
 
+    const minooHikingRouteToggle = document.getElementById('minooHikingRouteToggle');
+    if (minooHikingRouteToggle) {
+        minooHikingRouteToggle.checked = state.isMinooHikingRouteEnabled;
+    }
+
     // アプリバージョン（ブラウザに存在するキャッシュ名）を表示
     const appVersionDisplay = document.getElementById('appVersionDisplay');
     if (appVersionDisplay) {
@@ -213,6 +218,19 @@ export function initSettings() {
     const savedMinooEmergency = localStorage.getItem('routeLogger_minooEmergency');
     if (savedMinooEmergency !== null) {
         state.setIsMinooEmergencyEnabled(savedMinooEmergency === 'true');
+    }
+
+    // Minoo Hiking Route Toggle
+    const minooHikingRouteToggle = document.getElementById('minooHikingRouteToggle');
+    if (minooHikingRouteToggle) {
+        minooHikingRouteToggle.addEventListener('change', (e) => {
+            state.setIsMinooHikingRouteEnabled(e.target.checked);
+            localStorage.setItem('routeLogger_minooHikingRoute', e.target.checked);
+        });
+    }
+    const savedMinooHikingRoute = localStorage.getItem('routeLogger_minooHikingRoute');
+    if (savedMinooHikingRoute !== null) {
+        state.setIsMinooHikingRouteEnabled(savedMinooHikingRoute === 'true');
     }
 
     // ── 画像設定パネル ──────────────────────────────────────────────────────────

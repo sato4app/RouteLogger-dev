@@ -155,6 +155,10 @@ export async function initMap() {
     const emergencyPane = mapInstance.createPane('emergencyPane');
     emergencyPane.style.zIndex = '350';
 
+    // ハイキングルート用ペイン（緊急ポイントより背面: z-index 340）
+    const hikingRoutePane = mapInstance.createPane('hikingRoutePane');
+    hikingRoutePane.style.zIndex = '340';
+
     // 1. Scale Control (Top Left)
     L.control.scale({
         position: 'topleft',
@@ -547,6 +551,63 @@ export async function displayEmergencyPoints() {
 export function clearEmergencyPoints() {
     state.officialMarkers.forEach(marker => state.map.removeLayer(marker));
     state.clearOfficialMarkers();
+}
+
+/**
+ * ハイキングルート(公式:暫定版)を地図に表示
+ */
+export async function displayHikingRoute() {
+    if (!state.map) return;
+
+    try {
+        const response = await fetch('./data/minoo-hiking-route-spot.geojson');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const geojson = await response.json();
+
+        L.geoJSON(geojson, {
+            pointToLayer: (feature, latlng) => {
+                return L.circleMarker(latlng, {
+                    radius: 5,
+                    fillColor: '#1E90FF',
+                    color: '#104E8B',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8,
+                    pane: 'hikingRoutePane'
+                });
+            },
+            style: (feature) => {
+                if (feature.geometry && feature.geometry.type === 'LineString') {
+                    return {
+                        color: '#FF8C00',
+                        weight: 3,
+                        opacity: 0.8,
+                        pane: 'hikingRoutePane'
+                    };
+                }
+            },
+            onEachFeature: (feature, layer) => {
+                if (feature.properties) {
+                    const id = feature.properties.id ?? feature.id ?? '';
+                    const name = feature.properties.name || '';
+                    layer.bindPopup(`${id}<br>${name}`);
+                }
+            }
+        }).eachLayer(layer => {
+            layer.addTo(state.map);
+            state.addHikingRouteLayer(layer);
+        });
+    } catch (error) {
+        console.error('ハイキングルート読み込みエラー:', error);
+    }
+}
+
+/**
+ * ハイキングルート(公式:暫定版)を地図から削除
+ */
+export function clearHikingRoute() {
+    state.hikingRouteLayers.forEach(layer => state.map.removeLayer(layer));
+    state.clearHikingRouteLayers();
 }
 
 /**

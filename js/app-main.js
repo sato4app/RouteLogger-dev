@@ -8,7 +8,7 @@ import { takePhoto, closeCameraDialog, capturePhoto, savePhotoWithDirection, han
 import { saveToFirebase } from './firebase-ops.js';
 import { updateStatus, showPhotoList, closePhotoList, closePhotoViewer, showDataSize, closeStatsDialog, closeDocumentListDialog, showPhotoFromMarker, initPhotoViewerControls, initClock, initSettings, showSettingsDialog, showDocNameDialog, setUiBusy } from './ui.js';
 import { getAllExternalData, getAllTracks, getAllPhotos, clearIndexedDBSilent, clearRouteLogData, restoreTrack, savePhoto } from './db.js';
-import { displayExternalGeoJSON, displayAllTracks, clearMapData, displayEmergencyPoints, clearEmergencyPoints, addStartMarker, addEndMarker } from './map.js';
+import { displayExternalGeoJSON, displayAllTracks, clearMapData, displayEmergencyPoints, clearEmergencyPoints, displayHikingRoute, clearHikingRoute, addStartMarker, addEndMarker } from './map.js';
 import { calculateHeading } from './utils.js';
 import { exportToKmz } from './kmz-handler.js';
 import { initAuthUI, checkAndUpdateUserStatus } from './ui-auth.js';
@@ -51,6 +51,11 @@ async function initApp() {
     // 箕面緊急ポイント初期表示
     if (state.isMinooEmergencyEnabled) {
         await displayEmergencyPoints();
+    }
+
+    // ハイキングルート(公式:暫定版)初期表示
+    if (state.isMinooHikingRouteEnabled) {
+        await displayHikingRoute();
     }
 
     // ロード済みデータフラグ確認（KMZインポート後のリロード時はマゼンタ表示）
@@ -310,6 +315,18 @@ function setupEventListeners() {
                 await displayEmergencyPoints();
             } else {
                 clearEmergencyPoints();
+            }
+        });
+    }
+
+    // ハイキングルート(公式:暫定版) トグル
+    const minooHikingRouteToggle = document.getElementById('minooHikingRouteToggle');
+    if (minooHikingRouteToggle) {
+        minooHikingRouteToggle.addEventListener('change', async (e) => {
+            if (e.target.checked) {
+                await displayHikingRoute();
+            } else {
+                clearHikingRoute();
             }
         });
     }
