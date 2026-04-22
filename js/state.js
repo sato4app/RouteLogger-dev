@@ -1,5 +1,12 @@
 // RouteLogger - グローバル状態管理
 
+import {
+    DEFAULT_MARKER_COLOR_EMERGENCY, DEFAULT_MARKER_COLOR_ROUTE, DEFAULT_MARKER_COLOR_SPOT,
+    DEFAULT_MARKER_COLOR_TRACK, DEFAULT_MARKER_COLOR_PHOTO,
+    DEFAULT_MARKER_SIZE_EMERGENCY, DEFAULT_MARKER_SIZE_ROUTE, DEFAULT_MARKER_SIZE_SPOT,
+    DEFAULT_MARKER_SIZE_TRACK, DEFAULT_MARKER_SIZE_PHOTO
+} from './config.js';
+
 // 地図関連
 export let map = null;
 export let currentMarker = null;
@@ -127,3 +134,35 @@ export function clearHikingRouteLayers() { hikingRouteLayers = []; }
 // External Layers
 export function addExternalLayer(layer) { externalLayers.push(layer); }
 export function clearExternalLayers() { externalLayers = []; }
+
+// マーカー色設定
+export let markerColorEmergency = DEFAULT_MARKER_COLOR_EMERGENCY;
+export function setMarkerColorEmergency(value) { markerColorEmergency = value; }
+
+export let markerColorRoute = DEFAULT_MARKER_COLOR_ROUTE;
+export function setMarkerColorRoute(value) { markerColorRoute = value; }
+
+export let markerColorSpot = DEFAULT_MARKER_COLOR_SPOT;
+export function setMarkerColorSpot(value) { markerColorSpot = value; }
+
+export let markerColorTrack = DEFAULT_MARKER_COLOR_TRACK;
+export function setMarkerColorTrack(value) { markerColorTrack = value; }
+
+export let markerColorPhoto = DEFAULT_MARKER_COLOR_PHOTO;
+export function setMarkerColorPhoto(value) { markerColorPhoto = value; }
+
+// マーカーサイズ設定
+export let markerSizeEmergency = DEFAULT_MARKER_SIZE_EMERGENCY;
+export function setMarkerSizeEmergency(value) { markerSizeEmergency = value; }
+
+export let markerSizeRoute = DEFAULT_MARKER_SIZE_ROUTE;
+export function setMarkerSizeRoute(value) { markerSizeRoute = value; }
+
+export let markerSizeSpot = DEFAULT_MARKER_SIZE_SPOT;
+export function setMarkerSizeSpot(value) { markerSizeSpot = value; }
+
+export let markerSizeTrack = DEFAULT_MARKER_SIZE_TRACK;
+export function setMarkerSizeTrack(value) { markerSizeTrack = value; }
+
+export let markerSizePhoto = DEFAULT_MARKER_SIZE_PHOTO;
+export function setMarkerSizePhoto(value) { markerSizePhoto = value; }

@@ -1097,14 +1097,7 @@ body {
 }
 
 
-.photo-marker {
-    width: 14px;
-    height: 14px;
-    background: #000080;
-    border: 2px solid white;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
-}
+/* 写真マーカーのスタイルは map.js 内でインライン付与（色/サイズ可変） */
 
 
 /* Clock Display */
@@ -1159,6 +1152,82 @@ body {
 .setting-desc {
     font-size: 13px;
     color: var(--text-sub);
+}
+
+/* 設定の詳細パネル用 行レイアウト */
+.setting-item.marker-row {
+    border-bottom: none;
+    padding: 4px 0;
+}
+
+.marker-inputs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.marker-unit {
+    font-size: 0.85em;
+    color: #888;
+}
+
+.setting-num-input {
+    width: 42px;
+    text-align: right;
+    font-size: 0.9em;
+}
+
+.marker-color-text {
+    width: 72px;
+    font-family: monospace;
+    font-size: 0.85em;
+    padding: 2px 4px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    text-align: center;
+}
+
+.marker-color-picker {
+    width: 28px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    background: none;
+}
+
+.marker-size-input {
+    width: 36px;
+    text-align: right;
+    font-size: 0.9em;
+}
+
+/* 詳細設定のボタン行 */
+.settings-btn-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    justify-content: center;
+}
+
+.settings-panel-btn {
+    flex: 1;
+    padding: 6px 12px;
+    font-size: 0.9em;
+}
+
+.settings-action-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.settings-action-btn {
+    padding: 6px 20px;
+    flex: none;
 }
 
 /* Auth UI */

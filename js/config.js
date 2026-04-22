@@ -30,6 +30,20 @@ export const DEFAULT_PHOTO_RESOLUTION_LEVEL = 1; // 360×640px（中）
 export const DEFAULT_PHOTO_QUALITY = 70;          // 70%
 export const DEFAULT_THUMBNAIL_SIZE = 160;        // 160px
 
+// マーカー色の規定値
+export const DEFAULT_MARKER_COLOR_EMERGENCY = '#00AA00'; // 緊急ポイント
+export const DEFAULT_MARKER_COLOR_ROUTE     = '#FF8C00'; // ハイキングルート
+export const DEFAULT_MARKER_COLOR_SPOT      = '#1E90FF'; // スポット
+export const DEFAULT_MARKER_COLOR_TRACK     = '#000080'; // トラック
+export const DEFAULT_MARKER_COLOR_PHOTO     = '#000080'; // 写真撮影場所
+
+// マーカーサイズの規定値
+export const DEFAULT_MARKER_SIZE_EMERGENCY = 7; // 緊急ポイント（半径 px）
+export const DEFAULT_MARKER_SIZE_ROUTE     = 3; // ハイキングルート（線幅 px）
+export const DEFAULT_MARKER_SIZE_SPOT      = 5; // スポット（一辺の半分 px）
+export const DEFAULT_MARKER_SIZE_TRACK     = 4; // トラック（線幅 px）
+export const DEFAULT_MARKER_SIZE_PHOTO     = 6; // 写真撮影場所（半径 px）
+
 // 隠し設定セクション解除トリガー（アプリバージョン表示をn回タップ）
 export const HIDDEN_SETTINGS_TAP_COUNT = 5;  // 必要タップ回数
 export const HIDDEN_SETTINGS_TAP_SEC = 3;    // 判定時間ウィンドウ（秒）

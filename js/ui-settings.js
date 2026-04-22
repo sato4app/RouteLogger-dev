@@ -1,9 +1,21 @@
 // RouteLogger - Settings & Clock UI
 
 import * as state from './state.js';
-import { DEFAULT_PHOTO_RESOLUTION_LEVEL, DEFAULT_PHOTO_QUALITY, DEFAULT_THUMBNAIL_SIZE, HIDDEN_SETTINGS_TAP_COUNT, HIDDEN_SETTINGS_TAP_SEC } from './config.js';
+import {
+    DEFAULT_PHOTO_RESOLUTION_LEVEL, DEFAULT_PHOTO_QUALITY, DEFAULT_THUMBNAIL_SIZE,
+    DEFAULT_MARKER_COLOR_EMERGENCY, DEFAULT_MARKER_COLOR_ROUTE, DEFAULT_MARKER_COLOR_SPOT,
+    DEFAULT_MARKER_COLOR_TRACK, DEFAULT_MARKER_COLOR_PHOTO,
+    DEFAULT_MARKER_SIZE_EMERGENCY, DEFAULT_MARKER_SIZE_ROUTE, DEFAULT_MARKER_SIZE_SPOT,
+    DEFAULT_MARKER_SIZE_TRACK, DEFAULT_MARKER_SIZE_PHOTO,
+    HIDDEN_SETTINGS_TAP_COUNT, HIDDEN_SETTINGS_TAP_SEC
+} from './config.js';
 import { toggleVisibility } from './ui-common.js';
 import { checkAndUpdateUserStatus } from './ui-auth.js';
+import {
+    displayEmergencyPoints, clearEmergencyPoints,
+    displayHikingRoute, clearHikingRoute,
+    applyTrackingPathStyle, refreshPhotoMarkerIcons
+} from './map.js';
 
 
 /**
@@ -161,7 +173,6 @@ export function initSettings() {
                 _tapTimestamps = [];
                 const advSection = document.getElementById('advancedSettingsSection');
                 if (advSection) advSection.classList.remove('hidden');
-                openImageSettingsPanel();
             }
         });
     }
@@ -275,6 +286,10 @@ export function initSettings() {
         });
     }
 
+    // パネル切替ボタン
+    const imageSettingsBtn = document.getElementById('imageSettingsBtn');
+    const markerColorBtn   = document.getElementById('markerColorBtn');
+
     // パネルを開く: 現在のstateをスライダーに反映
     function openImageSettingsPanel() {
         if (photoResolutionSlider) photoResolutionSlider.value = state.photoResolutionLevel;
@@ -285,12 +300,14 @@ export function initSettings() {
         if (thumbnailSizeInput)    thumbnailSizeInput.value  = state.thumbnailSize;
         const section = document.getElementById('imageSettingsSection');
         if (section) section.classList.remove('hidden');
+        imageSettingsBtn?.classList.replace('secondary-btn', 'primary-btn');
     }
 
     // パネルを閉じる
     function closeImageSettingsPanel() {
         const section = document.getElementById('imageSettingsSection');
         if (section) section.classList.add('hidden');
+        imageSettingsBtn?.classList.replace('primary-btn', 'secondary-btn');
     }
 
     // スライダー・テキスト入力値をstateとlocalStorageに確定保存
@@ -309,7 +326,7 @@ export function initSettings() {
     }
 
     // 規定値をスライダーに反映（stateには反映しない）
-    function resetToDefaults() {
+    function resetImageSettingsToDefaults() {
         if (photoResolutionSlider) photoResolutionSlider.value = DEFAULT_PHOTO_RESOLUTION_LEVEL;
         if (photoResolutionLabel)  photoResolutionLabel.textContent = resolutionLabels[DEFAULT_PHOTO_RESOLUTION_LEVEL];
         if (photoQualitySlider)    photoQualitySlider.value = DEFAULT_PHOTO_QUALITY;
@@ -318,21 +335,178 @@ export function initSettings() {
         if (thumbnailSizeInput)    thumbnailSizeInput.value  = DEFAULT_THUMBNAIL_SIZE;
     }
 
+    // ── マーカー色設定パネル ────────────────────────────────────────────────────
+    const emergencyColorPicker = document.getElementById('emergencyColorPicker');
+    const emergencyColorInput  = document.getElementById('emergencyColorInput');
+    const emergencySizeInput   = document.getElementById('emergencySizeInput');
+    const routeColorPicker     = document.getElementById('routeColorPicker');
+    const routeColorInput      = document.getElementById('routeColorInput');
+    const routeSizeInput       = document.getElementById('routeSizeInput');
+    const spotColorPicker      = document.getElementById('spotColorPicker');
+    const spotColorInput       = document.getElementById('spotColorInput');
+    const spotSizeInput        = document.getElementById('spotSizeInput');
+    const trackColorPicker     = document.getElementById('trackColorPicker');
+    const trackColorInput      = document.getElementById('trackColorInput');
+    const trackSizeInput       = document.getElementById('trackSizeInput');
+    const photoColorPicker     = document.getElementById('photoColorPicker');
+    const photoColorInput      = document.getElementById('photoColorInput');
+    const photoSizeInput       = document.getElementById('photoSizeInput');
+
+    // カラーピッカー ↔ テキスト入力の双方向同期
+    function syncColorPair(picker, input) {
+        if (picker && input) {
+            picker.addEventListener('input', (e) => { input.value = e.target.value; });
+            input.addEventListener('change', (e) => {
+                const v = e.target.value.trim();
+                if (/^#[0-9a-fA-F]{6}$/.test(v)) picker.value = v.toLowerCase();
+            });
+        }
+    }
+    syncColorPair(emergencyColorPicker, emergencyColorInput);
+    syncColorPair(routeColorPicker, routeColorInput);
+    syncColorPair(spotColorPicker, spotColorInput);
+    syncColorPair(trackColorPicker, trackColorInput);
+    syncColorPair(photoColorPicker, photoColorInput);
+
+    function openMarkerColorPanel() {
+        if (emergencyColorPicker) emergencyColorPicker.value = state.markerColorEmergency;
+        if (emergencyColorInput)  emergencyColorInput.value  = state.markerColorEmergency;
+        if (emergencySizeInput)   emergencySizeInput.value   = state.markerSizeEmergency;
+        if (routeColorPicker)     routeColorPicker.value     = state.markerColorRoute;
+        if (routeColorInput)      routeColorInput.value      = state.markerColorRoute;
+        if (routeSizeInput)       routeSizeInput.value       = state.markerSizeRoute;
+        if (spotColorPicker)      spotColorPicker.value      = state.markerColorSpot;
+        if (spotColorInput)       spotColorInput.value       = state.markerColorSpot;
+        if (spotSizeInput)        spotSizeInput.value        = state.markerSizeSpot;
+        if (trackColorPicker)     trackColorPicker.value     = state.markerColorTrack;
+        if (trackColorInput)      trackColorInput.value      = state.markerColorTrack;
+        if (trackSizeInput)       trackSizeInput.value       = state.markerSizeTrack;
+        if (photoColorPicker)     photoColorPicker.value     = state.markerColorPhoto;
+        if (photoColorInput)      photoColorInput.value      = state.markerColorPhoto;
+        if (photoSizeInput)       photoSizeInput.value       = state.markerSizePhoto;
+        document.getElementById('markerColorSection')?.classList.remove('hidden');
+        markerColorBtn?.classList.replace('secondary-btn', 'primary-btn');
+    }
+
+    function closeMarkerColorPanel() {
+        document.getElementById('markerColorSection')?.classList.add('hidden');
+        markerColorBtn?.classList.replace('primary-btn', 'secondary-btn');
+    }
+
+    async function applyMarkerColors() {
+        const hexRe = /^#[0-9a-fA-F]{6}$/;
+        const pick = (textEl, pickerEl, current) => {
+            const v = textEl?.value.trim();
+            if (hexRe.test(v)) return v;
+            return pickerEl?.value || current;
+        };
+        const eColor = pick(emergencyColorInput, emergencyColorPicker, state.markerColorEmergency);
+        const rColor = pick(routeColorInput,     routeColorPicker,     state.markerColorRoute);
+        const sColor = pick(spotColorInput,      spotColorPicker,      state.markerColorSpot);
+        const tColor = pick(trackColorInput,     trackColorPicker,     state.markerColorTrack);
+        const pColor = pick(photoColorInput,     photoColorPicker,     state.markerColorPhoto);
+        state.setMarkerColorEmergency(eColor);
+        state.setMarkerColorRoute(rColor);
+        state.setMarkerColorSpot(sColor);
+        state.setMarkerColorTrack(tColor);
+        state.setMarkerColorPhoto(pColor);
+        localStorage.setItem('routeLogger_markerColorEmergency', eColor);
+        localStorage.setItem('routeLogger_markerColorRoute',     rColor);
+        localStorage.setItem('routeLogger_markerColorSpot',      sColor);
+        localStorage.setItem('routeLogger_markerColorTrack',     tColor);
+        localStorage.setItem('routeLogger_markerColorPhoto',     pColor);
+
+        const eSize = parseInt(emergencySizeInput?.value) || state.markerSizeEmergency;
+        const rSize = parseInt(routeSizeInput?.value)     || state.markerSizeRoute;
+        const sSize = parseInt(spotSizeInput?.value)      || state.markerSizeSpot;
+        const tSize = parseInt(trackSizeInput?.value)     || state.markerSizeTrack;
+        const pSize = parseInt(photoSizeInput?.value)     || state.markerSizePhoto;
+        state.setMarkerSizeEmergency(eSize);
+        state.setMarkerSizeRoute(rSize);
+        state.setMarkerSizeSpot(sSize);
+        state.setMarkerSizeTrack(tSize);
+        state.setMarkerSizePhoto(pSize);
+        localStorage.setItem('routeLogger_markerSizeEmergency', eSize);
+        localStorage.setItem('routeLogger_markerSizeRoute',     rSize);
+        localStorage.setItem('routeLogger_markerSizeSpot',      sSize);
+        localStorage.setItem('routeLogger_markerSizeTrack',     tSize);
+        localStorage.setItem('routeLogger_markerSizePhoto',     pSize);
+
+        // 表示中のレイヤーを再描画して変更を反映
+        if (state.isMinooEmergencyEnabled) {
+            clearEmergencyPoints();
+            await displayEmergencyPoints();
+        }
+        if (state.isMinooHikingRouteEnabled) {
+            clearHikingRoute();
+            await displayHikingRoute();
+        }
+        applyTrackingPathStyle();
+        refreshPhotoMarkerIcons();
+    }
+
+    function resetMarkerColorsToDefaults() {
+        if (emergencyColorPicker) emergencyColorPicker.value = DEFAULT_MARKER_COLOR_EMERGENCY;
+        if (emergencyColorInput)  emergencyColorInput.value  = DEFAULT_MARKER_COLOR_EMERGENCY;
+        if (emergencySizeInput)   emergencySizeInput.value   = DEFAULT_MARKER_SIZE_EMERGENCY;
+        if (routeColorPicker)     routeColorPicker.value     = DEFAULT_MARKER_COLOR_ROUTE;
+        if (routeColorInput)      routeColorInput.value      = DEFAULT_MARKER_COLOR_ROUTE;
+        if (routeSizeInput)       routeSizeInput.value       = DEFAULT_MARKER_SIZE_ROUTE;
+        if (spotColorPicker)      spotColorPicker.value      = DEFAULT_MARKER_COLOR_SPOT;
+        if (spotColorInput)       spotColorInput.value       = DEFAULT_MARKER_COLOR_SPOT;
+        if (spotSizeInput)        spotSizeInput.value        = DEFAULT_MARKER_SIZE_SPOT;
+        if (trackColorPicker)     trackColorPicker.value     = DEFAULT_MARKER_COLOR_TRACK;
+        if (trackColorInput)      trackColorInput.value      = DEFAULT_MARKER_COLOR_TRACK;
+        if (trackSizeInput)       trackSizeInput.value       = DEFAULT_MARKER_SIZE_TRACK;
+        if (photoColorPicker)     photoColorPicker.value     = DEFAULT_MARKER_COLOR_PHOTO;
+        if (photoColorInput)      photoColorInput.value      = DEFAULT_MARKER_COLOR_PHOTO;
+        if (photoSizeInput)       photoSizeInput.value       = DEFAULT_MARKER_SIZE_PHOTO;
+    }
+
+    // ── パネル切替 ─────────────────────────────────────────────────────────────
+    if (imageSettingsBtn) {
+        imageSettingsBtn.addEventListener('click', () => {
+            closeMarkerColorPanel();
+            openImageSettingsPanel();
+        });
+    }
+    if (markerColorBtn) {
+        markerColorBtn.addEventListener('click', () => {
+            closeImageSettingsPanel();
+            openMarkerColorPanel();
+        });
+    }
+
+    // ── 共通 Save / Default / Cancel ────────────────────────────────────────────
     const imageSettingsSaveBtn = document.getElementById('imageSettingsSaveBtn');
     const imageSettingsDefaultBtn = document.getElementById('imageSettingsDefaultBtn');
     const imageSettingsCancelBtn  = document.getElementById('imageSettingsCancelBtn');
 
-    if (imageSettingsSaveBtn) imageSettingsSaveBtn.addEventListener('click', () => {
-        applyImageSettings();
-        closeImageSettingsPanel();
-        const advSection = document.getElementById('advancedSettingsSection');
-        if (advSection) advSection.classList.add('hidden');
+    function isImagePanelOpen() {
+        return !document.getElementById('imageSettingsSection')?.classList.contains('hidden');
+    }
+    function isColorPanelOpen() {
+        return !document.getElementById('markerColorSection')?.classList.contains('hidden');
+    }
+
+    if (imageSettingsSaveBtn) imageSettingsSaveBtn.addEventListener('click', async () => {
+        if (isImagePanelOpen()) {
+            applyImageSettings();
+            closeImageSettingsPanel();
+        } else if (isColorPanelOpen()) {
+            await applyMarkerColors();
+            closeMarkerColorPanel();
+        }
+        document.getElementById('advancedSettingsSection')?.classList.add('hidden');
     });
-    if (imageSettingsDefaultBtn) imageSettingsDefaultBtn.addEventListener('click', resetToDefaults);
-    if (imageSettingsCancelBtn)  imageSettingsCancelBtn.addEventListener('click', () => {
+    if (imageSettingsDefaultBtn) imageSettingsDefaultBtn.addEventListener('click', () => {
+        if (isImagePanelOpen())       resetImageSettingsToDefaults();
+        else if (isColorPanelOpen())  resetMarkerColorsToDefaults();
+    });
+    if (imageSettingsCancelBtn) imageSettingsCancelBtn.addEventListener('click', () => {
         closeImageSettingsPanel();
-        const advSection = document.getElementById('advancedSettingsSection');
-        if (advSection) advSection.classList.add('hidden');
+        closeMarkerColorPanel();
+        document.getElementById('advancedSettingsSection')?.classList.add('hidden');
     });
 
     // ── 過去データDrive移行 ──────────────────────────────────────────────────────
@@ -452,4 +626,25 @@ export function initSettings() {
     const savedThumbnail = localStorage.getItem('routeLogger_thumbnailSize');
     if (savedThumbnail !== null) state.setThumbnailSize(parseInt(savedThumbnail));
 
+    const savedEmergencyColor = localStorage.getItem('routeLogger_markerColorEmergency');
+    if (savedEmergencyColor) state.setMarkerColorEmergency(savedEmergencyColor);
+    const savedRouteColor = localStorage.getItem('routeLogger_markerColorRoute');
+    if (savedRouteColor) state.setMarkerColorRoute(savedRouteColor);
+    const savedSpotColor = localStorage.getItem('routeLogger_markerColorSpot');
+    if (savedSpotColor) state.setMarkerColorSpot(savedSpotColor);
+    const savedTrackColor = localStorage.getItem('routeLogger_markerColorTrack');
+    if (savedTrackColor) state.setMarkerColorTrack(savedTrackColor);
+    const savedPhotoColor = localStorage.getItem('routeLogger_markerColorPhoto');
+    if (savedPhotoColor) state.setMarkerColorPhoto(savedPhotoColor);
+
+    const savedEmergencySize = localStorage.getItem('routeLogger_markerSizeEmergency');
+    if (savedEmergencySize !== null) state.setMarkerSizeEmergency(parseInt(savedEmergencySize));
+    const savedRouteSize = localStorage.getItem('routeLogger_markerSizeRoute');
+    if (savedRouteSize !== null) state.setMarkerSizeRoute(parseInt(savedRouteSize));
+    const savedSpotSize = localStorage.getItem('routeLogger_markerSizeSpot');
+    if (savedSpotSize !== null) state.setMarkerSizeSpot(parseInt(savedSpotSize));
+    const savedTrackSize = localStorage.getItem('routeLogger_markerSizeTrack');
+    if (savedTrackSize !== null) state.setMarkerSizeTrack(parseInt(savedTrackSize));
+    const savedPhotoSize = localStorage.getItem('routeLogger_markerSizePhoto');
+    if (savedPhotoSize !== null) state.setMarkerSizePhoto(parseInt(savedPhotoSize));
 }

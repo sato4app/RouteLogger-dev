@@ -370,10 +370,15 @@
                     </div>
                 </div>
                 <!-- 画面設定等（隠し：アプリバージョンラベルを連続タップで表示） -->
-                <div id="advancedSettingsSection" class="hidden">
+                <div id="advancedSettingsSection" class="hidden" style="padding: 8px 16px 4px;">
+                <!-- パネル切替ボタン行 -->
+                <div class="settings-btn-row">
+                    <button id="imageSettingsBtn" class="secondary-btn settings-panel-btn">画像解像度の設定</button>
+                    <button id="markerColorBtn" class="secondary-btn settings-panel-btn">マーカーの設定</button>
+                </div>
                 <!-- 画像設定パネル（展開） -->
-                <div id="imageSettingsSection" class="hidden" style="padding: 8px 16px 4px;">
-                    <div class="setting-item" style="border:none; padding:4px 0;">
+                <div id="imageSettingsSection" class="hidden">
+                    <div class="setting-item marker-row">
                         <div class="setting-label">
                             <div class="setting-title">写真解像度</div>
                             <div class="setting-desc" id="photoResolutionLabel">360×640px（中）</div>
@@ -386,59 +391,116 @@
                             </div>
                         </div>
                     </div>
-                    <div class="setting-item" style="border:none; padding:4px 0;">
+                    <div class="setting-item marker-row">
                         <div class="setting-label">
                             <div class="setting-title">JPEG画像品質</div>
                             <div class="setting-desc">撮影写真の圧縮品質</div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <input type="text" id="photoQualityInput" value="70"
-                                style="width:42px; text-align:right; font-size:0.9em;">
-                            <span style="font-size:0.85em; color:#888;">%</span>
+                        <div class="marker-inputs">
+                            <input type="text" id="photoQualityInput" value="70" class="setting-num-input">
+                            <span class="marker-unit">%</span>
                             <input type="range" id="photoQualitySlider" min="60" max="80" step="10" value="70"
                                 style="width:70px; accent-color:#4a90d9;">
                         </div>
                     </div>
-                    <div class="setting-item" style="border:none; padding:4px 0;">
+                    <div class="setting-item marker-row">
                         <div class="setting-label">
                             <div class="setting-title">サムネール</div>
                             <div class="setting-desc">サムネール画像サイズ</div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:6px;">
-                            <input type="text" id="thumbnailSizeInput" value="160"
-                                style="width:42px; text-align:right; font-size:0.9em;">
-                            <span style="font-size:0.85em; color:#888;">px</span>
+                        <div class="marker-inputs">
+                            <input type="text" id="thumbnailSizeInput" value="160" class="setting-num-input">
+                            <span class="marker-unit">px</span>
                             <input type="range" id="thumbnailSizeSlider" min="80" max="320" step="40" value="160"
                                 style="width:70px; accent-color:#4a90d9;">
                         </div>
                     </div>
-                    <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; justify-content:flex-end; margin-right:-16px;">
-                        <button id="imageSettingsSaveBtn" class="primary-btn" style="padding:6px 20px; flex:none;">設定</button>
-                        <button id="imageSettingsDefaultBtn" class="secondary-btn" style="padding:6px 20px; flex:none;">規定値</button>
-                        <button id="imageSettingsCancelBtn" class="secondary-btn" style="padding:6px 20px; flex:none;">キャンセル</button>
+                </div>
+                <!-- マーカー色設定パネル（展開） -->
+                <div id="markerColorSection" class="hidden">
+                    <div class="setting-item marker-row">
+                        <div class="setting-label">
+                            <div class="setting-title">緊急ポイント</div>
+                        </div>
+                        <div class="marker-inputs">
+                            <input type="text" id="emergencyColorInput" value="#00AA00" maxlength="7" class="marker-color-text">
+                            <input type="color" id="emergencyColorPicker" value="#00AA00" class="marker-color-picker">
+                            <input type="text" id="emergencySizeInput" value="7" class="marker-size-input">
+                            <span class="marker-unit">px</span>
+                        </div>
                     </div>
-                    <!-- 過去データDrive移行 -->
-                    <div style="border-top:1px solid #ddd; margin-top:12px; padding-top:10px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div class="setting-title">過去データをDriveに移行</div>
-                            <button id="migrateToggleBtn" class="secondary-btn" style="padding:4px 14px; flex:none;">▶</button>
+                    <div class="setting-item marker-row">
+                        <div class="setting-label">
+                            <div class="setting-title">ハイキングルート</div>
                         </div>
-                        <div id="migratePanel" class="hidden" style="margin-top:8px;">
-                            <!-- 前方一致検索 -->
-                            <div style="display:flex; gap:6px; margin-bottom:8px;">
-                                <input type="text" id="migratePrefixInput" placeholder="前方一致で絞り込み"
-                                    style="flex:1; font-size:0.85em; padding:4px 8px; border:1px solid #ccc; border-radius:4px;">
-                                <button id="migrateSearchBtn" style="padding:4px 10px; border:1px solid #ccc; border-radius:4px; background:#fff; cursor:pointer; font-size:1em;">🔍</button>
-                            </div>
-                            <!-- チェックボックス一覧 -->
-                            <div id="migrateList" style="max-height:160px; overflow-y:auto; border:1px solid #eee; border-radius:4px; padding:4px 8px; margin-bottom:8px; text-align:left;"></div>
-                            <!-- 操作ボタン -->
-                            <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
-                                <button id="migrateSelectAllBtn" class="secondary-btn" style="padding:4px 12px; font-size:0.8em;">全選択</button>
-                                <button id="migrateExecBtn" class="primary-btn" style="padding:4px 16px; font-size:0.85em;">実行</button>
-                            </div>
-                            <div id="migrateToDriveMsg" style="margin-top:6px; font-size:0.8em; color:#555; min-height:1.2em;"></div>
+                        <div class="marker-inputs">
+                            <input type="text" id="routeColorInput" value="#FF8C00" maxlength="7" class="marker-color-text">
+                            <input type="color" id="routeColorPicker" value="#FF8C00" class="marker-color-picker">
+                            <input type="text" id="routeSizeInput" value="3" class="marker-size-input">
+                            <span class="marker-unit">px</span>
                         </div>
+                    </div>
+                    <div class="setting-item marker-row">
+                        <div class="setting-label">
+                            <div class="setting-title">スポット</div>
+                        </div>
+                        <div class="marker-inputs">
+                            <input type="text" id="spotColorInput" value="#1E90FF" maxlength="7" class="marker-color-text">
+                            <input type="color" id="spotColorPicker" value="#1E90FF" class="marker-color-picker">
+                            <input type="text" id="spotSizeInput" value="5" class="marker-size-input">
+                            <span class="marker-unit">px</span>
+                        </div>
+                    </div>
+                    <div class="setting-item marker-row">
+                        <div class="setting-label">
+                            <div class="setting-title">トラック</div>
+                        </div>
+                        <div class="marker-inputs">
+                            <input type="text" id="trackColorInput" value="#000080" maxlength="7" class="marker-color-text">
+                            <input type="color" id="trackColorPicker" value="#000080" class="marker-color-picker">
+                            <input type="text" id="trackSizeInput" value="4" class="marker-size-input">
+                            <span class="marker-unit">px</span>
+                        </div>
+                    </div>
+                    <div class="setting-item marker-row">
+                        <div class="setting-label">
+                            <div class="setting-title">写真撮影場所</div>
+                        </div>
+                        <div class="marker-inputs">
+                            <input type="text" id="photoColorInput" value="#000080" maxlength="7" class="marker-color-text">
+                            <input type="color" id="photoColorPicker" value="#000080" class="marker-color-picker">
+                            <input type="text" id="photoSizeInput" value="6" class="marker-size-input">
+                            <span class="marker-unit">px</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 共通ボタン行 -->
+                <div class="settings-action-row">
+                    <button id="imageSettingsSaveBtn" class="primary-btn settings-action-btn">設定</button>
+                    <button id="imageSettingsDefaultBtn" class="secondary-btn settings-action-btn">規定値</button>
+                    <button id="imageSettingsCancelBtn" class="secondary-btn settings-action-btn">キャンセル</button>
+                </div>
+                <!-- 過去データDrive移行 -->
+                <div style="border-top:1px solid #ddd; margin-top:12px; padding-top:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div class="setting-title">過去データをDriveに移行</div>
+                        <button id="migrateToggleBtn" class="secondary-btn" style="padding:4px 14px; flex:none;">▶</button>
+                    </div>
+                    <div id="migratePanel" class="hidden" style="margin-top:8px;">
+                        <!-- 前方一致検索 -->
+                        <div style="display:flex; gap:6px; margin-bottom:8px;">
+                            <input type="text" id="migratePrefixInput" placeholder="前方一致で絞り込み"
+                                style="flex:1; font-size:0.85em; padding:4px 8px; border:1px solid #ccc; border-radius:4px;">
+                            <button id="migrateSearchBtn" style="padding:4px 10px; border:1px solid #ccc; border-radius:4px; background:#fff; cursor:pointer; font-size:1em;">🔍</button>
+                        </div>
+                        <!-- チェックボックス一覧 -->
+                        <div id="migrateList" style="max-height:160px; overflow-y:auto; border:1px solid #eee; border-radius:4px; padding:4px 8px; margin-bottom:8px; text-align:left;"></div>
+                        <!-- 操作ボタン -->
+                        <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
+                            <button id="migrateSelectAllBtn" class="secondary-btn" style="padding:4px 12px; font-size:0.8em;">全選択</button>
+                            <button id="migrateExecBtn" class="primary-btn" style="padding:4px 16px; font-size:0.85em;">実行</button>
+                        </div>
+                        <div id="migrateToDriveMsg" style="margin-top:6px; font-size:0.8em; color:#555; min-height:1.2em;"></div>
                     </div>
                 </div>
                 </div><!-- /advancedSettingsSection -->

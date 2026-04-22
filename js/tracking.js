@@ -175,7 +175,7 @@ export async function updatePosition(position) {
 
             // 初回記録時（Start Point）にマーカー追加
             if (state.trackingData.length === 1) {
-                addStartMarker(lat, lng);
+                addStartMarker(lat, lng, state.markerColorTrack);
             }
 
             // UI更新（DB保存より先に行う）

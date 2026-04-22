@@ -106,12 +106,13 @@ export function createSquareIcon(color = '#000080') {
  * @returns {L.DivIcon}
  */
 export function createPhotoIcon(color = null) {
-    const style = color ? ` style="background-color:${color}; border-color:${color};"` : '';
+    const bg = color || state.markerColorPhoto;
+    const diameter = state.markerSizePhoto * 2;
     return L.divIcon({
-        className: 'photo-marker',
-        html: `<div class="photo-marker-circle"${style}></div>`,
-        iconSize: [12, 12],
-        iconAnchor: [6, 6]
+        className: '',
+        html: `<div style="width:${diameter}px; height:${diameter}px; background-color:${bg}; border:2px solid white; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.25);"></div>`,
+        iconSize: [diameter, diameter],
+        iconAnchor: [diameter / 2, diameter / 2]
     });
 }
 
@@ -181,8 +182,8 @@ export async function initMap() {
     }).addTo(mapInstance);
 
     const trackingPathInstance = L.polyline([], {
-        color: '#000080',
-        weight: 4,
+        color: state.markerColorTrack,
+        weight: state.markerSizeTrack,
         opacity: 0.7
     }).addTo(mapInstance);
     state.setTrackingPath(trackingPathInstance);
@@ -241,7 +242,7 @@ export async function displayPhotoMarkers(onMarkerClick, color = null) {
 export function clearMapData(options = { keepExternal: false }) {
     if (state.trackingPath) {
         state.trackingPath.setLatLngs([]);
-        state.trackingPath.setStyle({ color: '#000080' });
+        state.trackingPath.setStyle({ color: state.markerColorTrack, weight: state.markerSizeTrack });
     }
 
     state.photoMarkers.forEach(marker => state.map.removeLayer(marker));
@@ -520,9 +521,9 @@ export async function displayEmergencyPoints() {
         L.geoJSON(geojson, {
             pointToLayer: (feature, latlng) => {
                 return L.circleMarker(latlng, {
-                    radius: 7,
-                    fillColor: '#00AA00',
-                    color: '#007700',
+                    radius: state.markerSizeEmergency,
+                    fillColor: state.markerColorEmergency,
+                    color: state.markerColorEmergency,
                     weight: 2,
                     opacity: 1,
                     fillOpacity: 0.8,
@@ -546,6 +547,27 @@ export async function displayEmergencyPoints() {
 }
 
 /**
+ * トラッキング経路の線スタイル(色・太さ)を現在のstate値で再適用
+ */
+export function applyTrackingPathStyle() {
+    if (state.trackingPath) {
+        state.trackingPath.setStyle({
+            color: state.markerColorTrack,
+            weight: state.markerSizeTrack
+        });
+    }
+}
+
+/**
+ * 既存の写真マーカーアイコンを現在のstate値(色・サイズ)で再適用
+ */
+export function refreshPhotoMarkerIcons() {
+    state.photoMarkers.forEach(marker => {
+        marker.setIcon(createPhotoIcon());
+    });
+}
+
+/**
  * 箕面緊急ポイントを地図から削除
  */
 export function clearEmergencyPoints() {
@@ -564,38 +586,44 @@ export async function displayHikingRoute() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const geojson = await response.json();
 
-        L.geoJSON(geojson, {
-            pointToLayer: (feature, latlng) => {
-                return L.circleMarker(latlng, {
-                    radius: 5,
-                    fillColor: '#1E90FF',
-                    color: '#104E8B',
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.8,
-                    pane: 'hikingRoutePane'
+        // スポット(Point)は正方形のdivIcon、ルート(LineString)はpolylineで描画
+        geojson.features.forEach(feature => {
+            const geom = feature.geometry;
+            if (!geom) return;
+
+            if (geom.type === 'Point') {
+                const [lng, lat] = geom.coordinates;
+                const side = state.markerSizeSpot * 2;
+                const icon = L.divIcon({
+                    className: '',
+                    html: `<div style="width:${side}px; height:${side}px; background-color:${state.markerColorSpot}; border:2px solid #ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>`,
+                    iconSize: [side, side],
+                    iconAnchor: [side / 2, side / 2]
                 });
-            },
-            style: (feature) => {
-                if (feature.geometry && feature.geometry.type === 'LineString') {
-                    return {
-                        color: '#FF8C00',
-                        weight: 3,
-                        opacity: 0.8,
-                        pane: 'hikingRoutePane'
-                    };
-                }
-            },
-            onEachFeature: (feature, layer) => {
+                const marker = L.marker([lat, lng], { icon, pane: 'hikingRoutePane' });
                 if (feature.properties) {
                     const id = feature.properties.id ?? feature.id ?? '';
                     const name = feature.properties.name || '';
-                    layer.bindPopup(`${id}<br>${name}`);
+                    marker.bindPopup(`${id}<br>${name}`);
                 }
+                marker.addTo(state.map);
+                state.addHikingRouteLayer(marker);
+            } else if (geom.type === 'LineString') {
+                const latlngs = geom.coordinates.map(c => [c[1], c[0]]);
+                const polyline = L.polyline(latlngs, {
+                    color: state.markerColorRoute,
+                    weight: state.markerSizeRoute,
+                    opacity: 0.8,
+                    pane: 'hikingRoutePane'
+                });
+                if (feature.properties) {
+                    const id = feature.properties.id ?? feature.id ?? '';
+                    const name = feature.properties.name || '';
+                    polyline.bindPopup(`${id}<br>${name}`);
+                }
+                polyline.addTo(state.map);
+                state.addHikingRouteLayer(polyline);
             }
-        }).eachLayer(layer => {
-            layer.addTo(state.map);
-            state.addHikingRouteLayer(layer);
         });
     } catch (error) {
         console.error('ハイキングルート読み込みエラー:', error);
