@@ -202,7 +202,8 @@ body {
     justify-content: center;
     color: white;
     font-size: clamp(20px, 5.5vw, 26px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    border: 2px solid #ffffff;
     transition: background-color 0.3s;
     flex-shrink: 0;
 }
@@ -215,9 +216,15 @@ body {
 
 .action-btn span {
     font-size: clamp(10px, 2.8vw, 13px);
-    font-weight: 600;
-    color: var(--text-sub);
+    font-weight: 700;
+    color: var(--text-main);
     white-space: nowrap;
+    text-shadow:
+        0 0 3px #ffffff,
+        0 0 3px #ffffff,
+        0 0 3px #ffffff,
+        0 0 3px #ffffff,
+        0 1px 2px rgba(255, 255, 255, 0.9);
 }
 
 /* Button Colors */
@@ -246,9 +253,8 @@ body {
 }
 
 .clear-icon {
-    background: var(--bg-glass);
+    background: #ffffff;
     color: var(--text-sub);
-    box-shadow: none;
 }
 
 .save-icon {
@@ -290,7 +296,7 @@ body {
 #clearBtn span {
     font-size: clamp(10px, 2.8vw, 13px);
     font-weight: 700;
-    color: var(--text-sub);
+    color: var(--text-main);
     white-space: nowrap;
 }
 
