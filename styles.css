@@ -189,8 +189,8 @@ body {
 }
 
 .action-btn:disabled {
-    opacity: 0.4;
     cursor: not-allowed;
+    filter: grayscale(0.85);
 }
 
 .icon-box {
