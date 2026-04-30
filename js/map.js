@@ -2,7 +2,7 @@
 
 import { DEFAULT_POSITION, GSI_TILE_URL, GSI_ATTRIBUTION, MAP_MAX_NATIVE_ZOOM, MAP_MAX_ZOOM, MAP_MIN_ZOOM } from './config.js';
 import * as state from './state.js';
-import { getLastPosition, getAllPhotos, getExternalPhoto } from './db.js';
+import { getAllPhotos, getExternalPhoto } from './db.js';
 import { calculateHeading } from './utils.js';
 
 /** ポップアップ内の外部リンク画像をlightboxで表示 */
@@ -120,32 +120,9 @@ export function createPhotoIcon(color = null) {
  * 地図を初期化
  */
 export async function initMap() {
-    let initialPosition = DEFAULT_POSITION;
-
-    // 現在位置を取得して初期化
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-
-                const map = state.map;
-                if (map) {
-                    map.setView([lat, lng], 16);
-                }
-            },
-            (error) => {
-                console.warn('現在位置の取得に失敗しました。デフォルト位置を使用します:', error);
-                const map = state.map;
-                if (map) {
-                    map.setView([DEFAULT_POSITION.lat, DEFAULT_POSITION.lng], DEFAULT_POSITION.zoom);
-                }
-            },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
-    } else {
-        console.warn('Geolocation APIがサポートされていません。デフォルト位置を使用します。');
-    }
+    // 起動時の中心地点は常に箕面大滝（DEFAULT_POSITION）に固定する。
+    // 現在地への自動移動は行わない。
+    const initialPosition = DEFAULT_POSITION;
 
     const mapInstance = L.map('map', {
         zoomControl: false // Disable default zoom control

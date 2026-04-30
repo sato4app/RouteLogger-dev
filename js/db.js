@@ -1,6 +1,6 @@
 // RouteLogger - IndexedDB操作
 
-import { DB_NAME, DB_VERSION, STORE_TRACKS, STORE_PHOTOS, STORE_SETTINGS, STORE_EXTERNALS, STORE_EXTERNAL_PHOTOS, DEFAULT_POSITION } from './config.js';
+import { DB_NAME, DB_VERSION, STORE_TRACKS, STORE_PHOTOS, STORE_SETTINGS, STORE_EXTERNALS, STORE_EXTERNAL_PHOTOS } from './config.js';
 import * as state from './state.js';
 
 /**
@@ -52,66 +52,6 @@ export function initIndexedDB() {
                 photoStore.createIndex('importId', 'importId', { unique: false });
             }
         };
-    });
-}
-
-/**
- * 最後の位置を保存
- */
-export async function saveLastPosition(lat, lng, zoom) {
-    if (!state.db) return;
-
-    try {
-        const transaction = state.db.transaction([STORE_SETTINGS], 'readwrite');
-        const store = transaction.objectStore(STORE_SETTINGS);
-        const positionData = {
-            key: 'lastPosition',
-            lat: parseFloat(lat.toFixed(5)),
-            lng: parseFloat(lng.toFixed(5)),
-            zoom: zoom,
-            timestamp: new Date().toISOString()
-        };
-        await store.put(positionData);
-
-    } catch (error) {
-        console.error('位置保存エラー:', error);
-    }
-}
-
-/**
- * 最後の位置を取得
- * @returns {Promise<Object|null>}
- */
-export function getLastPosition() {
-    return new Promise((resolve, reject) => {
-        if (!state.db) {
-            reject(new Error('データベースが初期化されていません'));
-            return;
-        }
-
-        try {
-            const transaction = state.db.transaction([STORE_SETTINGS], 'readonly');
-            const store = transaction.objectStore(STORE_SETTINGS);
-            const request = store.get('lastPosition');
-
-            request.onsuccess = () => {
-                if (request.result) {
-
-                    resolve(request.result);
-                } else {
-
-                    resolve(null);
-                }
-            };
-
-            request.onerror = () => {
-                console.error('位置取得エラー:', request.error);
-                reject(request.error);
-            };
-        } catch (error) {
-            console.error('位置取得エラー:', error);
-            reject(error);
-        }
     });
 }
 
@@ -359,8 +299,6 @@ export async function clearRouteLogData() {
  */
 export async function clearIndexedDBSilent() {
     try {
-        const lastPosition = await getLastPosition();
-
         if (state.db) {
             state.db.close();
             state.setDb(null);
@@ -382,15 +320,6 @@ export async function clearIndexedDBSilent() {
         });
 
         await initIndexedDB();
-
-
-        if (lastPosition) {
-            await saveLastPosition(lastPosition.lat, lastPosition.lng, lastPosition.zoom);
-
-        } else {
-            await saveLastPosition(DEFAULT_POSITION.lat, DEFAULT_POSITION.lng, DEFAULT_POSITION.zoom);
-
-        }
 
         state.setTrackingStartTime(null);
         state.resetTrackingData();

@@ -3,7 +3,7 @@
 import { GPS_RECORD_INTERVAL_SEC, GPS_RECORD_DISTANCE_M } from './config.js';
 import * as state from './state.js';
 import { calculateDistance, formatDateTime } from './utils.js';
-import { initIndexedDB, getAllTracks, getAllPhotos, clearRouteLogData, saveLastPosition, saveTrackingDataRealtime, createInitialTrack } from './db.js';
+import { initIndexedDB, getAllTracks, getAllPhotos, clearRouteLogData, saveTrackingDataRealtime, createInitialTrack } from './db.js';
 import { calculateTrackStats, calculateHeading } from './utils.js';
 import { updateCurrentMarker, updateTrackingPath, clearMapData, addStartMarker } from './map.js';
 import { updateStatus, updateCoordinates, updateDataSizeIfOpen, showClearDataDialog, updateUiForTrackingState, clearInputUndoHistory } from './ui.js';
@@ -299,6 +299,15 @@ export async function startTracking() {
     state.setLastRecordedPoint(null);
     state.setPreviousTotalPoints(0);
 
+    // 過去のトラック表示(polyline)とStart/Endマーカーを画面からクリアし、
+    // 新規記録は必ずStart押下後の最初のGPS地点から始まるようにする。
+    if (state.trackingPath) {
+        state.trackingPath.setLatLngs([]);
+        state.trackingPath.setStyle({ color: state.markerColorTrack, weight: state.markerSizeTrack });
+    }
+    state.routeMarkers.forEach(marker => state.map.removeLayer(marker));
+    state.clearRouteMarkers();
+
     // UI更新 (ボタン状態など)
     updateUiForTrackingState();
 
@@ -381,8 +390,6 @@ export async function stopTracking() {
     updateUiForTrackingState();
 
     if (state.trackingData.length > 0) {
-        const lastPoint = state.trackingData[state.trackingData.length - 1];
-        await saveLastPosition(lastPoint.lat, lastPoint.lng, state.map.getZoom());
         await saveTrackingDataRealtime(); // 最終更新 (新規作成ではなく更新)
         const totalPoints = state.previousTotalPoints + state.trackingData.length;
         updateStatus(`GPS記録を停止しました (${totalPoints}点記録)`);
