@@ -1,7 +1,7 @@
 // RouteLogger Service Worker
 // PWA対応: オフライン機能とキャッシュ管理
 
-const CACHE_NAME = 'RLog-v10.5';
+const CACHE_NAME = 'RLog-v10.6';
 const urlsToCache = [
   './',
   './index.html',
@@ -18,8 +18,8 @@ const urlsToCache = [
   './js/camera.js',
   './js/firebase-ops.js',
   './js/ui.js',
-  './data/minoo-emergency-points.geojson',
-  './data/minoo-hiking-route-spot.geojson',
+  './data/minoh-emergency-points.geojson',
+  './data/minoh-hiking-route-spot.geojson',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   './icons/icon-180.png',

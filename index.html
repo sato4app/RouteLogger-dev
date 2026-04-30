@@ -352,13 +352,16 @@
                 </div>
                 <div class="setting-item">
                     <div class="setting-label">
-                        <div class="setting-title">ハイキングルート(公式:暫定版)を表示</div>
+                        <div class="setting-title">ハイキングルート(公式)を表示</div>
                         <div class="setting-desc">箕面のハイキングルートとスポットを表示</div>
                     </div>
                     <label class="toggle-switch">
                         <input type="checkbox" id="minooHikingRouteToggle">
                         <span class="slider round"></span>
                     </label>
+                </div>
+                <div class="setting-item" style="justify-content:flex-end;">
+                    <button id="messageHistoryBtn" class="secondary-btn" style="flex:none; padding:6px 14px;">メッセージ履歴</button>
                 </div>
                 <div class="setting-item">
                     <div id="appVersionLabel" class="setting-label" style="cursor:pointer; user-select:none;">
@@ -507,6 +510,18 @@
             </div>
             <div class="modal-actions">
                 <button id="closeSettingsBtn" class="primary-btn" style="width: 100%;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message History Dialog -->
+    <div id="messageHistoryDialog" class="modal-dialog hidden">
+        <div class="modal-content">
+            <h2>メッセージ履歴</h2>
+            <div id="messageHistoryList" class="list-container" style="text-align:left; max-height:60vh; overflow-y:auto;"></div>
+            <div class="modal-actions">
+                <button id="messageHistoryClearBtn" class="secondary-btn">クリア</button>
+                <button id="messageHistoryCloseBtn" class="primary-btn">閉じる</button>
             </div>
         </div>
     </div>

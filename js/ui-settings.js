@@ -9,7 +9,7 @@ import {
     DEFAULT_MARKER_SIZE_TRACK, DEFAULT_MARKER_SIZE_PHOTO,
     HIDDEN_SETTINGS_TAP_COUNT, HIDDEN_SETTINGS_TAP_SEC
 } from './config.js';
-import { toggleVisibility } from './ui-common.js';
+import { toggleVisibility, getMessageHistory, clearMessageHistory, clearInputUndoHistory } from './ui-common.js';
 import { checkAndUpdateUserStatus } from './ui-auth.js';
 import {
     displayEmergencyPoints, clearEmergencyPoints,
@@ -136,6 +136,63 @@ export function closeSettingsDialog() {
     const advSection = document.getElementById('advancedSettingsSection');
     if (advSection) advSection.classList.add('hidden');
     toggleVisibility('settingsDialog', false);
+    // iOS「シェイクで取り消し」ダイアログ防止：
+    // 設定でテキスト入力した直後にメイン画面へ戻るため、ここで undoヒストリをクリア
+    clearInputUndoHistory();
+}
+
+/**
+ * 日時を整形（YYYY/MM/DD HH:mm:ss）
+ */
+function _formatTimestamp(ts) {
+    const d = new Date(ts);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ` +
+           `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+/**
+ * HTMLエスケープ
+ */
+function _escapeHtml(s) {
+    return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
+ * メッセージ履歴ダイアログを描画して表示
+ */
+export function showMessageHistoryDialog() {
+    const listEl = document.getElementById('messageHistoryList');
+    if (listEl) {
+        const items = getMessageHistory();
+        if (items.length === 0) {
+            listEl.innerHTML = '<div style="text-align:center; color:#888; padding:16px;">履歴はありません</div>';
+        } else {
+            listEl.innerHTML = items.map(item => {
+                const time = _formatTimestamp(item.timestamp);
+                const ver = _escapeHtml(item.version || '');
+                const msg = _escapeHtml(item.message || '');
+                return `<div style="border-bottom:1px solid #eee; padding:8px 4px;">` +
+                       `<div style="font-size:0.75em; color:#888; display:flex; justify-content:space-between; gap:8px;">` +
+                       `<span>${time}</span><span>${ver}</span></div>` +
+                       `<div style="font-size:0.95em; color:#222; white-space:pre-wrap; margin-top:2px;">${msg}</div>` +
+                       `</div>`;
+            }).join('');
+        }
+    }
+    toggleVisibility('messageHistoryDialog', true);
+}
+
+/**
+ * メッセージ履歴ダイアログを閉じる
+ */
+export function closeMessageHistoryDialog() {
+    toggleVisibility('messageHistoryDialog', false);
 }
 
 /**
@@ -158,6 +215,25 @@ export function initSettings() {
     const closeBtn = document.getElementById('closeSettingsBtn');
     if (closeBtn) {
         closeBtn.addEventListener('click', closeSettingsDialog);
+    }
+
+    // メッセージ履歴ボタン
+    const messageHistoryBtn = document.getElementById('messageHistoryBtn');
+    if (messageHistoryBtn) {
+        messageHistoryBtn.addEventListener('click', showMessageHistoryDialog);
+    }
+    const messageHistoryCloseBtn = document.getElementById('messageHistoryCloseBtn');
+    if (messageHistoryCloseBtn) {
+        messageHistoryCloseBtn.addEventListener('click', closeMessageHistoryDialog);
+    }
+    const messageHistoryClearBtn = document.getElementById('messageHistoryClearBtn');
+    if (messageHistoryClearBtn) {
+        messageHistoryClearBtn.addEventListener('click', () => {
+            if (confirm('メッセージ履歴をすべて削除しますか？')) {
+                clearMessageHistory();
+                showMessageHistoryDialog();
+            }
+        });
     }
 
     // アプリバージョンのラベル部分を連続タップで「画面設定等」を表示

@@ -6,7 +6,7 @@ import { initMap, displayPhotoMarkers } from './map.js';
 import { startTracking, stopTracking, handleVisibilityChange, handleDeviceOrientation } from './tracking.js';
 import { takePhoto, closeCameraDialog, capturePhoto, savePhotoWithDirection, handleTextButton, retakePhoto } from './camera.js';
 import { saveToFirebase } from './firebase-ops.js';
-import { updateStatus, showPhotoList, closePhotoList, closePhotoViewer, showDataSize, closeStatsDialog, closeDocumentListDialog, showPhotoFromMarker, initPhotoViewerControls, initClock, initSettings, showSettingsDialog, showDocNameDialog, setUiBusy } from './ui.js';
+import { updateStatus, showPhotoList, closePhotoList, closePhotoViewer, showDataSize, closeStatsDialog, closeDocumentListDialog, showPhotoFromMarker, initPhotoViewerControls, initClock, initSettings, showSettingsDialog, showDocNameDialog, setUiBusy, clearInputUndoHistory } from './ui.js';
 import { getAllExternalData, getAllTracks, getAllPhotos, clearIndexedDBSilent, clearRouteLogData, restoreTrack, savePhoto } from './db.js';
 import { displayExternalGeoJSON, displayAllTracks, clearMapData, displayEmergencyPoints, clearEmergencyPoints, displayHikingRoute, clearHikingRoute, addStartMarker, addEndMarker } from './map.js';
 import { calculateHeading } from './utils.js';
@@ -474,16 +474,14 @@ function setupEventListeners() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // ポケット内でのシェイクによるiOS「入力キャンセル」ダイアログを防止
-    // 画面がロック/アンロックされる際、全テキスト入力をblurしてundoヒストリを消去する
-    // ※ activeElementのみ対象では不十分。全inputのvalueを空→復元することでiOSのundoスタックを消去する
-    document.addEventListener('visibilitychange', () => {
-        document.querySelectorAll('input[type="text"], input[type="email"], textarea').forEach(el => {
-            const val = el.value;
-            el.blur();
-            el.value = '';
-            el.value = val;
-        });
-    });
+    // - visibilitychange: 画面ロック/復帰時
+    // - pagehide: バックグラウンド遷移時（iOS Safariで visibilitychange が来ない場合の保険）
+    // ※ トラッキング中は Wake Lock により visibilitychange が発火しないため、
+    //   tracking.startTracking() / closeSettingsDialog() / showDocNameDialog cleanup
+    //   などからも明示的にクリアしている。
+    const _clearOnHide = () => clearInputUndoHistory();
+    document.addEventListener('visibilitychange', _clearOnHide);
+    window.addEventListener('pagehide', _clearOnHide);
 
     // デバイス方角センサー
     setupDeviceOrientation();

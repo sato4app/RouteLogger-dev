@@ -6,7 +6,7 @@ import { calculateDistance, formatDateTime } from './utils.js';
 import { initIndexedDB, getAllTracks, getAllPhotos, clearRouteLogData, saveLastPosition, saveTrackingDataRealtime, createInitialTrack } from './db.js';
 import { calculateTrackStats, calculateHeading } from './utils.js';
 import { updateCurrentMarker, updateTrackingPath, clearMapData, addStartMarker } from './map.js';
-import { updateStatus, updateCoordinates, updateDataSizeIfOpen, showClearDataDialog, updateUiForTrackingState } from './ui.js';
+import { updateStatus, updateCoordinates, updateDataSizeIfOpen, showClearDataDialog, updateUiForTrackingState, clearInputUndoHistory } from './ui.js';
 
 /**
  * Wake Lockを取得（画面スリープ防止）
@@ -60,11 +60,7 @@ export async function handleVisibilityChange() {
 
         // テキスト入力中でない場合: 全入力要素のundoスタックをリセット（iOSシェイクUndoダイアログ防止）
         if (!isTextInput) {
-            document.querySelectorAll('input, textarea').forEach(el => {
-                const saved = el.value;
-                el.value = '';
-                el.value = saved;
-            });
+            clearInputUndoHistory();
         }
 
         // アクティブ要素のフォーカスを外す
@@ -326,6 +322,10 @@ export async function startTracking() {
 
     // Wake Lock取得
     await requestWakeLock();
+
+    // iOS「シェイクで取り消し」ダイアログ対策：
+    // 記録開始＝ポケット歩行に入る直前のため、ここで全テキスト入力のundoヒストリをクリア
+    clearInputUndoHistory();
 
     // iOS DeviceOrientation許可
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {

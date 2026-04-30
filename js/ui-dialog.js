@@ -3,7 +3,7 @@
 import * as state from './state.js';
 import { getAllTracks, getAllPhotos } from './db.js';
 import { calculateTrackStats, formatDataSize } from './utils.js';
-import { toggleVisibility, updateStatus } from './ui-common.js';
+import { toggleVisibility, updateStatus, clearInputUndoHistory } from './ui-common.js';
 
 /**
  * ドキュメント名入力ダイアログを表示
@@ -53,6 +53,8 @@ export function showDocNameDialog(defaultName, title) {
             input.removeEventListener('keypress', handleKeyPress);
             input.blur(); // フォーカスを外してシェイクでUndoダイアログが出ないようにする
             toggleVisibility(dialogId, false);
+            // iOS「シェイクで取り消し」ダイアログ防止：undoヒストリをクリア
+            clearInputUndoHistory();
         };
 
         toggleVisibility(dialogId, true);
