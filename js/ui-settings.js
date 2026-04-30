@@ -19,6 +19,40 @@ import {
 
 
 /**
+ * 動作中のService Workerから CACHE_NAME を取得する。
+ * SW未制御・タイムアウト時はnullを返す。
+ * - 接頭辞・バージョン番号体系の変更に依存せず、SWが申告したまま表示できるためB案で採用。
+ * @returns {Promise<string|null>}
+ */
+async function fetchActiveCacheName() {
+    if (!('serviceWorker' in navigator)) return null;
+    let sw = navigator.serviceWorker.controller;
+    if (!sw) {
+        try {
+            const reg = await navigator.serviceWorker.ready;
+            sw = reg.active || reg.waiting || reg.installing;
+        } catch (e) {
+            return null;
+        }
+    }
+    if (!sw) return null;
+    return new Promise((resolve) => {
+        const channel = new MessageChannel();
+        const timer = setTimeout(() => resolve(null), 1500);
+        channel.port1.onmessage = (e) => {
+            clearTimeout(timer);
+            resolve((e.data && e.data.cacheName) || null);
+        };
+        try {
+            sw.postMessage({ type: 'GET_CACHE_NAME' }, [channel.port2]);
+        } catch (e) {
+            clearTimeout(timer);
+            resolve(null);
+        }
+    });
+}
+
+/**
  * 時計をclearBtnの横位置に合わせる
  */
 function alignClockToClearBtn() {
@@ -109,20 +143,29 @@ export function showSettingsDialog() {
         minooHikingRouteToggle.checked = state.isMinooHikingRouteEnabled;
     }
 
-    // アプリバージョン（ブラウザに存在するキャッシュ名）を表示
+    // アプリバージョン: 動作中のService WorkerにCACHE_NAMEを問い合わせて表示
+    // 接頭辞・バージョン体系（10.9→10.10など）が変わっても解析不要。
+    // SW未制御・タイムアウト時は caches.keys() の結果でフォールバック表示。
     const appVersionDisplay = document.getElementById('appVersionDisplay');
     if (appVersionDisplay) {
-        if ('caches' in window) {
-            caches.keys()
-                .then(keys => {
-                    appVersionDisplay.textContent = keys.length > 0 ? keys.join(', ') : '不明';
-                })
-                .catch(() => {
+        appVersionDisplay.textContent = '取得中...';
+        fetchActiveCacheName().then(async (name) => {
+            if (name) {
+                appVersionDisplay.textContent = name;
+                return;
+            }
+            // フォールバック: SWが応答しない場合はキャッシュ一覧の先頭を表示
+            if ('caches' in window) {
+                try {
+                    const keys = await caches.keys();
+                    appVersionDisplay.textContent = keys.length > 0 ? keys[0] : '不明';
+                } catch (e) {
                     appVersionDisplay.textContent = '取得失敗';
-                });
-        } else {
-            appVersionDisplay.textContent = '非対応';
-        }
+                }
+            } else {
+                appVersionDisplay.textContent = '非対応';
+            }
+        });
     }
 
     toggleVisibility('settingsDialog', true);

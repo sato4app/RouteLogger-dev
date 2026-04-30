@@ -78,6 +78,17 @@ self.addEventListener('activate', function (event) {
   );
 });
 
+// クライアントからのメッセージ処理（現在動作中のSWが使用するCACHE_NAMEを返す等）
+self.addEventListener('message', function (event) {
+  if (!event.data) return;
+  if (event.data.type === 'GET_CACHE_NAME') {
+    // MessageChannel経由でリクエスト元へ返信
+    if (event.ports && event.ports[0]) {
+      event.ports[0].postMessage({ cacheName: CACHE_NAME });
+    }
+  }
+});
+
 // リクエストの処理
 self.addEventListener('fetch', function (event) {
   // 国土地理院のタイルは常にネットワークから取得（リアルタイム性のため）
