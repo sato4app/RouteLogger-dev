@@ -220,8 +220,8 @@ export function updateStatus(message) {
     if (statusEl) {
         statusEl.classList.remove('hidden');
     }
-    // 履歴に追加（GPS記録中は除外）
-    if (!isTracking) {
+    // 履歴に追加（GPS記録中・写真アップロード中は除外）
+    if (!isTracking && !message.startsWith('写真をアップロード中')) {
         appendMessageHistory(message);
     }
     // 10秒後にメッセージを消す（座標表示が無ければステータスバー全体を非表示）

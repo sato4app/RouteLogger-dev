@@ -3,7 +3,7 @@
 import * as state from './state.js';
 import { getAllPhotos, updatePhoto, deletePhoto, getAllExternalPhotos, getAllExternalData, saveExternalPhoto, getExternalPhoto } from './db.js';
 import { removePhotoMarker } from './map.js';
-import { toggleVisibility, updateStatus } from './ui-common.js';
+import { toggleVisibility, updateStatus, clearInputUndoHistory } from './ui-common.js';
 
 let currentPhotoList = [];
 let currentPhotoIndex = -1;
@@ -684,6 +684,9 @@ export async function closePhotoViewer() {
     if (photoListContainer && !photoListContainer.classList.contains('hidden')) {
         showPhotoList();
     }
+    // iOS「シェイクで取り消し」ダイアログ防止：
+    // viewerTextArea でテキスト編集した後にメイン画面へ戻るため、ここで undoヒストリをクリア
+    clearInputUndoHistory();
 }
 
 /**
@@ -781,6 +784,8 @@ export function initPhotoViewerControls() {
             await updatePhoto(photo);
             textEditor.classList.add('hidden');
             updatePhotoViewerUI(photo, currentPhotoIndex, currentPhotoList.length);
+            // iOS「シェイクで取り消し」ダイアログ防止：undoヒストリをクリア
+            clearInputUndoHistory();
         };
 
         const doCancel = () => {
@@ -788,6 +793,8 @@ export function initPhotoViewerControls() {
             _stopKbWatch();
             textEditor.classList.add('hidden');
             document.getElementById('photoViewer').classList.remove('editing');
+            // iOS「シェイクで取り消し」ダイアログ防止：undoヒストリをクリア
+            clearInputUndoHistory();
         };
 
         // モジュールレベル変数に参照を保持（_handlePendingEdit から呼び出すため）
