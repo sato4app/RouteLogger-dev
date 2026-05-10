@@ -1,7 +1,7 @@
 // RouteLogger Service Worker
 // PWA対応: オフライン機能とキャッシュ管理
 
-const CACHE_NAME = 'RLog-v10.8';
+const CACHE_NAME = 'RLog-v10.9';
 const urlsToCache = [
   './',
   './index.html',
@@ -19,7 +19,7 @@ const urlsToCache = [
   './js/firebase-ops.js',
   './js/ui.js',
   './data/minoh-emergency-points.geojson',
-  './data/minoh-hiking-route-spot.geojson',
+  './data/minoh-hiking-routes-spots.geojson',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   './icons/icon-180.png',
@@ -60,20 +60,20 @@ self.addEventListener('activate', function (event) {
           }
         })
       )
-      .then(function () {
-        // 全クライアントを即座にこのSWの管理下に置く
-        return self.clients.claim();
-      })
-      .then(function () {
-        // アップデートの場合のみ、開いているページにリロードを通知
-        if (hasOldCache) {
-          return self.clients.matchAll({ type: 'window' }).then(function (clients) {
-            clients.forEach(function (client) {
-              client.postMessage({ type: 'SW_UPDATED' });
+        .then(function () {
+          // 全クライアントを即座にこのSWの管理下に置く
+          return self.clients.claim();
+        })
+        .then(function () {
+          // アップデートの場合のみ、開いているページにリロードを通知
+          if (hasOldCache) {
+            return self.clients.matchAll({ type: 'window' }).then(function (clients) {
+              clients.forEach(function (client) {
+                client.postMessage({ type: 'SW_UPDATED' });
+              });
             });
-          });
-        }
-      });
+          }
+        });
     })
   );
 });

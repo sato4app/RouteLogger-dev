@@ -89,13 +89,16 @@ resolveAppVersion();
 
 /**
  * iOS「シェイクで取り消し」ダイアログ防止のため、テキスト入力のundoヒストリをクリア。
- * - 全テキスト系入力をblur
- * - disabledトグル＋value再設定でundoスタックを実効的にリセット
+ * - data-undo-clone="true" の要素は clone-replace で undo履歴を物理破棄（最も確実）
+ * - それ以外は disabled トグル＋value再設定でフォールバック（addEventListenerリスナを保持）
  * - 編集中(activeElement)はスキップ
  *
  * トラッキング中はWake Lockで画面が消えないため visibilitychange が発火しない。
  * よって、ポケット歩行前に呼び出されるトリガー（記録開始時・ダイアログ閉時等）から
- * 明示的に呼ぶ必要がある。
+ * 明示的に呼ぶ必要がある。さらに toggleVisibility(id,false) からも自動的に呼ばれる。
+ *
+ * 注意: clone-replace 対象 (data-undo-clone="true") は addEventListener で付けたリスナを失う。
+ * その要素のイベントは親要素にイベント委譲するか、open処理側で都度バインドすること。
  */
 export function clearInputUndoHistory() {
     const selector = 'input[type="text"], input[type="email"], input[type="search"], input[type="url"], input[type="tel"], input[type="password"], input[type="number"], textarea';
@@ -103,14 +106,20 @@ export function clearInputUndoHistory() {
         // 現在編集中の入力は触らない
         if (document.activeElement === el) return;
         try {
-            const val = el.value;
-            el.blur();
-            // disabledを一瞬トグルしてiOSの編集状態を解除
-            const wasDisabled = el.disabled;
-            el.disabled = true;
-            el.value = '';
-            el.disabled = wasDisabled;
-            el.value = val;
+            if (el.dataset.undoClone === 'true') {
+                // ノードを別インスタンスに置き換えることで iOS の undo スタックを物理的に破棄
+                const fresh = el.cloneNode(false);
+                el.parentNode.replaceChild(fresh, el);
+            } else {
+                const val = el.value;
+                el.blur();
+                // disabledを一瞬トグルしてiOSの編集状態を解除
+                const wasDisabled = el.disabled;
+                el.disabled = true;
+                el.value = '';
+                el.disabled = wasDisabled;
+                el.value = val;
+            }
         } catch (e) {
             /* 無視 */
         }
@@ -201,6 +210,9 @@ export function toggleVisibility(elementId, isVisible) {
         el.classList.remove('hidden');
     } else {
         el.classList.add('hidden');
+        // 防衛策: オーバーレイ/ダイアログを隠す経路すべてで iOS Shake Undo 防止
+        // （per-経路のオプトイン忘れによる再発を構造的に排除）
+        clearInputUndoHistory();
     }
 }
 

@@ -49,12 +49,12 @@ async function initApp() {
     await initMap();
 
     // 箕面緊急ポイント初期表示
-    if (state.isMinooEmergencyEnabled) {
+    if (state.isMinohEmergencyEnabled) {
         await displayEmergencyPoints();
     }
 
     // ハイキングルート(公式:暫定版)初期表示
-    if (state.isMinooHikingRouteEnabled) {
+    if (state.isMinohHikingRouteEnabled) {
         await displayHikingRoute();
     }
 
@@ -308,9 +308,9 @@ function setupEventListeners() {
     });
 
     // 箕面緊急ポイント トグル
-    const minooEmergencyToggle = document.getElementById('minooEmergencyToggle');
-    if (minooEmergencyToggle) {
-        minooEmergencyToggle.addEventListener('change', async (e) => {
+    const minohEmergencyToggle = document.getElementById('minohEmergencyToggle');
+    if (minohEmergencyToggle) {
+        minohEmergencyToggle.addEventListener('change', async (e) => {
             if (e.target.checked) {
                 await displayEmergencyPoints();
             } else {
@@ -320,9 +320,9 @@ function setupEventListeners() {
     }
 
     // ハイキングルート(公式:暫定版) トグル
-    const minooHikingRouteToggle = document.getElementById('minooHikingRouteToggle');
-    if (minooHikingRouteToggle) {
-        minooHikingRouteToggle.addEventListener('change', async (e) => {
+    const minohHikingRouteToggle = document.getElementById('minohHikingRouteToggle');
+    if (minohHikingRouteToggle) {
+        minohHikingRouteToggle.addEventListener('change', async (e) => {
             if (e.target.checked) {
                 await displayHikingRoute();
             } else {

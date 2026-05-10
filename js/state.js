@@ -82,11 +82,11 @@ export function setIsFirebaseEnabled(value) { isFirebaseEnabled = value; }
 export let isShowFacingButtons = true;
 export function setIsShowFacingButtons(value) { isShowFacingButtons = value; }
 
-export let isMinooEmergencyEnabled = true;
-export function setIsMinooEmergencyEnabled(value) { isMinooEmergencyEnabled = value; }
+export let isMinohEmergencyEnabled = true;
+export function setIsMinohEmergencyEnabled(value) { isMinohEmergencyEnabled = value; }
 
-export let isMinooHikingRouteEnabled = false;
-export function setIsMinooHikingRouteEnabled(value) { isMinooHikingRouteEnabled = value; }
+export let isMinohHikingRouteEnabled = false;
+export function setIsMinohHikingRouteEnabled(value) { isMinohHikingRouteEnabled = value; }
 
 // 写真解像度: 0=720x1280, 1=360x640, 2=180x320
 export let photoResolutionLevel = 1;

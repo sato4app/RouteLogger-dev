@@ -133,14 +133,14 @@ export function showSettingsDialog() {
         showFacingToggle.checked = state.isShowFacingButtons;
     }
 
-    const minooEmergencyToggle = document.getElementById('minooEmergencyToggle');
-    if (minooEmergencyToggle) {
-        minooEmergencyToggle.checked = state.isMinooEmergencyEnabled;
+    const minohEmergencyToggle = document.getElementById('minohEmergencyToggle');
+    if (minohEmergencyToggle) {
+        minohEmergencyToggle.checked = state.isMinohEmergencyEnabled;
     }
 
-    const minooHikingRouteToggle = document.getElementById('minooHikingRouteToggle');
-    if (minooHikingRouteToggle) {
-        minooHikingRouteToggle.checked = state.isMinooHikingRouteEnabled;
+    const minohHikingRouteToggle = document.getElementById('minohHikingRouteToggle');
+    if (minohHikingRouteToggle) {
+        minohHikingRouteToggle.checked = state.isMinohHikingRouteEnabled;
     }
 
     // アプリバージョン: 動作中のService WorkerにCACHE_NAMEを問い合わせて表示
@@ -337,30 +337,30 @@ export function initSettings() {
         state.setIsShowFacingButtons(savedFacingSetting === 'true');
     }
 
-    // Minoo Emergency Toggle
-    const minooEmergencyToggle = document.getElementById('minooEmergencyToggle');
-    if (minooEmergencyToggle) {
-        minooEmergencyToggle.addEventListener('change', (e) => {
-            state.setIsMinooEmergencyEnabled(e.target.checked);
-            localStorage.setItem('routeLogger_minooEmergency', e.target.checked);
+    // Minoh Emergency Toggle
+    const minohEmergencyToggle = document.getElementById('minohEmergencyToggle');
+    if (minohEmergencyToggle) {
+        minohEmergencyToggle.addEventListener('change', (e) => {
+            state.setIsMinohEmergencyEnabled(e.target.checked);
+            localStorage.setItem('routeLogger_minohEmergency', e.target.checked);
         });
     }
-    const savedMinooEmergency = localStorage.getItem('routeLogger_minooEmergency');
-    if (savedMinooEmergency !== null) {
-        state.setIsMinooEmergencyEnabled(savedMinooEmergency === 'true');
+    const savedMinohEmergency = localStorage.getItem('routeLogger_minohEmergency');
+    if (savedMinohEmergency !== null) {
+        state.setIsMinohEmergencyEnabled(savedMinohEmergency === 'true');
     }
 
-    // Minoo Hiking Route Toggle
-    const minooHikingRouteToggle = document.getElementById('minooHikingRouteToggle');
-    if (minooHikingRouteToggle) {
-        minooHikingRouteToggle.addEventListener('change', (e) => {
-            state.setIsMinooHikingRouteEnabled(e.target.checked);
-            localStorage.setItem('routeLogger_minooHikingRoute', e.target.checked);
+    // Minoh Hiking Route Toggle
+    const minohHikingRouteToggle = document.getElementById('minohHikingRouteToggle');
+    if (minohHikingRouteToggle) {
+        minohHikingRouteToggle.addEventListener('change', (e) => {
+            state.setIsMinohHikingRouteEnabled(e.target.checked);
+            localStorage.setItem('routeLogger_minohHikingRoute', e.target.checked);
         });
     }
-    const savedMinooHikingRoute = localStorage.getItem('routeLogger_minooHikingRoute');
-    if (savedMinooHikingRoute !== null) {
-        state.setIsMinooHikingRouteEnabled(savedMinooHikingRoute === 'true');
+    const savedMinohHikingRoute = localStorage.getItem('routeLogger_minohHikingRoute');
+    if (savedMinohHikingRoute !== null) {
+        state.setIsMinohHikingRouteEnabled(savedMinohHikingRoute === 'true');
     }
 
     // ── 画像設定パネル ──────────────────────────────────────────────────────────
@@ -552,11 +552,11 @@ export function initSettings() {
         localStorage.setItem('routeLogger_markerSizePhoto',     pSize);
 
         // 表示中のレイヤーを再描画して変更を反映
-        if (state.isMinooEmergencyEnabled) {
+        if (state.isMinohEmergencyEnabled) {
             clearEmergencyPoints();
             await displayEmergencyPoints();
         }
-        if (state.isMinooHikingRouteEnabled) {
+        if (state.isMinohHikingRouteEnabled) {
             clearHikingRoute();
             await displayHikingRoute();
         }

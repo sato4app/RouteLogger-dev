@@ -548,6 +548,9 @@ export function closePhotoList() {
         const totalPoints = state.previousTotalPoints + state.trackingData.length;
         updateStatus(`GPS記録中 (${totalPoints}点記録)`);
     }
+    // iOS「シェイクで取り消し」ダイアログ防止：mainへ戻る経路のため明示的に呼ぶ
+    // （toggleVisibility 側でも自動クリアされるが、冗長な保険）
+    clearInputUndoHistory();
 }
 
 /**
@@ -765,14 +768,18 @@ export function initPhotoViewerControls() {
     // Edit Text ボタン
     const editTextBtn = document.getElementById('viewerEditTextBtn');
     const textEditor = document.getElementById('viewerTextEditor');
-    const textArea = document.getElementById('viewerTextArea');
     const textSaveBtn = document.getElementById('viewerTextSaveBtn');
     const textCancelBtn = document.getElementById('viewerTextCancelBtn');
+    // viewerTextArea は clearInputUndoHistory() で clone-replace される可能性があるため、
+    // 参照をキャプチャせず毎回 getElementById で取得する。
+    const getTextArea = () => document.getElementById('viewerTextArea');
 
-    if (editTextBtn && textEditor && textArea) {
+    if (editTextBtn && textEditor) {
         const doSave = async () => {
             const photo = currentDisplayedPhoto;
             if (!photo) return;
+            const textArea = getTextArea();
+            if (!textArea) return;
             textArea.blur(); // キーボードを閉じる
             _stopKbWatch();
             const trimmed = textArea.value.trim();
@@ -789,7 +796,8 @@ export function initPhotoViewerControls() {
         };
 
         const doCancel = () => {
-            textArea.blur(); // キーボードを閉じる
+            const textArea = getTextArea();
+            if (textArea) textArea.blur(); // キーボードを閉じる
             _stopKbWatch();
             textEditor.classList.add('hidden');
             document.getElementById('photoViewer').classList.remove('editing');
@@ -804,6 +812,8 @@ export function initPhotoViewerControls() {
         editTextBtn.onclick = () => {
             const photo = currentDisplayedPhoto;
             if (!photo) return;
+            const textArea = getTextArea();
+            if (!textArea) return;
             textArea.value = photo.text || '';
             textEditor.classList.remove('hidden');
             document.getElementById('photoViewer').classList.add('editing');
@@ -829,7 +839,9 @@ export function initPhotoViewerControls() {
         });
 
         // キーボードショートカット: Ctrl/Cmd+Enter で保存、Escape でキャンセル
-        textArea.addEventListener('keydown', (e) => {
+        // textArea は clone-replace で差し替わるため、親(textEditor)にイベント委譲
+        textEditor.addEventListener('keydown', (e) => {
+            if (!(e.target && e.target.id === 'viewerTextArea')) return;
             if (e.key === 'Escape') {
                 e.preventDefault();
                 doCancel();

@@ -258,12 +258,12 @@ RouteLogger - GPS位置記録
 ### 3.6 箕面オーバーレイ機能
 
 #### 3.6.1 箕面緊急ポイント表示
-- 設定「箕面緊急ポイントを表示」ON で `data/minoo-emergency-points.geojson`（約170点）を読み込み、専用ペイン `emergencyPane`（z-index 350）に CircleMarker で表示
+- 設定「箕面緊急ポイントを表示」ON で `data/minoh-emergency-points.geojson`（約170点）を読み込み、専用ペイン `emergencyPane`（z-index 350）に CircleMarker で表示
 - マーカー色・半径は設定の「マーカー設定 > 緊急ポイント」で変更可能（既定 `#00AA00`、半径 7px）
 - 各マーカーには ID + 名前のポップアップを設定
 
 #### 3.6.2 ハイキングルート（公式）表示
-- 設定「ハイキングルート(公式)を表示」ON で `data/minoo-hiking-route-spot.geojson` を読み込み、専用ペイン `hikingRoutePane`（z-index 340）に表示
+- 設定「ハイキングルート(公式)を表示」ON で `data/minoh-hiking-routes-spots.geojson` を読み込み、専用ペイン `hikingRoutePane`（z-index 340）に表示
 - LineString はポリライン（既定 `#FF8C00`、太さ 3px）、Point は四角アイコン（既定 `#1E90FF`、一辺 10px）として描画
 - マーカー色・サイズは設定の「マーカー設定」で変更可能
 
@@ -276,8 +276,8 @@ RouteLogger - GPS位置記録
 | 保存時にクラウドのデータベースを使用 | トグル | OFF | `routeLogger_useFirebase` |
 | ユーザー接続（Firebase ON時のみ表示） | フォーム | - | `routeLogger_username` 等 |
 | 進行方向ボタンを表示 | トグル | ON | `routeLogger_showFacingButtons` |
-| 箕面緊急ポイントを表示 | トグル | ON | `routeLogger_minooEmergency` |
-| ハイキングルート(公式)を表示 | トグル | OFF | `routeLogger_minooHikingRoute` |
+| 箕面緊急ポイントを表示 | トグル | ON | `routeLogger_minohEmergency` |
+| ハイキングルート(公式)を表示 | トグル | OFF | `routeLogger_minohHikingRoute` |
 | アプリバージョン | 表示 | - | （Service Worker から取得） |
 | メッセージ履歴 | ボタン | - | `routeLogger_messageHistory` |
 
@@ -382,10 +382,15 @@ RouteLogger - GPS位置記録
 - iOS Safari の「シェイクで取り消し」（Undo Typing）ダイアログを抑制
 - `clearInputUndoHistory()` を以下のタイミングで呼び出す:
   - `tracking.startTracking()` 直前（ポケット歩行突入時）
-  - 各ダイアログ close 時（`closeSettingsDialog`、`showDocNameDialog` cleanup 等）
+  - 各ダイアログ close 時（`closeSettingsDialog`、`showDocNameDialog` cleanup、`closePhotoList` 等）
   - `visibilitychange`（hidden）／ `pagehide`
-- 実装: 全テキスト入力をループし、編集中以外の要素について `blur()` →`disabled` トグル → value 再設定で iOS の編集状態を確実にリセット
+  - `toggleVisibility(id, false)` 経由で**自動的にも**呼ばれる（per-経路オプトイン忘れの構造的排除）
+- 実装（2層）:
+  - `data-undo-clone="true"` を付与した要素は `cloneNode(false)` + `replaceChild` で iOS の undo 履歴を物理破棄（最も確実）。利用側は `addEventListener` リスナを失う前提でイベント委譲か都度バインドで対応すること
+  - それ以外は `blur()` → `disabled` トグル → value 再設定で undo を実効リセット（リスナ保持）
+- 編集中(`document.activeElement`)の入力はスキップ
 - `visibilitychange`(hidden) でアクティブ要素を `blur()` する保険処理も維持
+- 現在 `data-undo-clone="true"` 適用要素: `viewerTextArea`（写真メモ編集）
 
 ---
 
@@ -493,8 +498,8 @@ tracks/{projectName}/photos/{timestamp}.jpg
 | `routeLogger_showClock` | 時刻表示ON/OFF |
 | `routeLogger_useFirebase` | Firebase 使用ON/OFF |
 | `routeLogger_showFacingButtons` | Forward/Backwardボタン表示 |
-| `routeLogger_minooEmergency` | 箕面緊急ポイント表示 |
-| `routeLogger_minooHikingRoute` | 箕面ハイキングルート表示 |
+| `routeLogger_minohEmergency` | 箕面緊急ポイント表示 |
+| `routeLogger_minohHikingRoute` | 箕面ハイキングルート表示 |
 | `routeLogger_username` | ユーザー名 |
 | `routeLogger_email` | メールアドレス |
 | `routeLogger_displayName` | 表示名（氏名） |
@@ -514,7 +519,7 @@ tracks/{projectName}/photos/{timestamp}.jpg
 #### 5.1.1 キャッシュ対象（プリキャッシュ）
 - アプリ本体: `./`, `./index.html`, `./styles.css`, `./manifest.json`
 - JSモジュール: `js/firebase-config.js`, `js/app-main.js`, `js/config.js`, `js/state.js`, `js/utils.js`, `js/db.js`, `js/map.js`, `js/tracking.js`, `js/camera.js`, `js/firebase-ops.js`, `js/ui.js`
-- 静的データ: `data/minoo-emergency-points.geojson`, `data/minoo-hiking-route-spot.geojson`
+- 静的データ: `data/minoh-emergency-points.geojson`, `data/minoh-hiking-routes-spots.geojson`
 - 外部CDN: `https://unpkg.com/leaflet@1.9.4/dist/leaflet.css`, `leaflet.js`
 - アイコン: `icons/icon-180.png`, `icon-192.png`, `icon-512.png`
 
@@ -725,8 +730,8 @@ RouteLogger/
 ├── firebase.json
 ├── .firebaserc
 ├── data/
-│   ├── minoo-emergency-points.geojson
-│   └── minoo-hiking-route-spot.geojson
+│   ├── minoh-emergency-points.geojson
+│   └── minoh-hiking-routes-spots.geojson
 ├── icons/
 │   ├── icon-180.png
 │   ├── icon-192.png

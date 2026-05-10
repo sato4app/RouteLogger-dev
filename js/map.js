@@ -491,7 +491,7 @@ export async function displayEmergencyPoints() {
     if (!state.map) return;
 
     try {
-        const response = await fetch('./data/minoo-emergency-points.geojson');
+        const response = await fetch('./data/minoh-emergency-points.geojson');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const geojson = await response.json();
 
@@ -559,7 +559,7 @@ export async function displayHikingRoute() {
     if (!state.map) return;
 
     try {
-        const response = await fetch('./data/minoo-hiking-route-spot.geojson');
+        const response = await fetch('./data/minoh-hiking-routes-spots.geojson');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const geojson = await response.json();
 
